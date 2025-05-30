@@ -6,12 +6,12 @@ module.exports = {
       'activity_log',
       {
         id: {
-          type: Sequelize.BIGINT,
+          type: Sequelize.UUID,
           primaryKey: true,
           allowNull: false,
           unique: true,
+          defaultValue: Sequelize.UUIDV4, 
           field: 'id',
-          autoIncrement: true,
           comment: 'id of the activity_log',
         },
         logName: {
@@ -39,7 +39,7 @@ module.exports = {
           comment: 'subject_type of the activity_log',
         },
         subjectId: {
-          type: Sequelize.BIGINT,
+          type: Sequelize.UUID,
           primaryKey: false,
           allowNull: true,
           unique: false,
@@ -63,7 +63,7 @@ module.exports = {
           comment: 'causer_type of the activity_log',
         },
         causerId: {
-          type: Sequelize.BIGINT,
+          type: Sequelize.UUID,
           primaryKey: false,
           allowNull: true,
           unique: false,
