@@ -1,12 +1,12 @@
 export type ActivityLog = {
-  id: number;
+  id: string;
   log_name?: string;
   description: string;
   subject_type?: string;
-  subject_id?: number;
+  subject_id?: string;
   event?: string;
   causer_type?: string;
-  causer_id?: number;
+  causer_id?: string;
   properties?: object;
   batch_uuid?: string;
   created_at?: Date;
@@ -48,7 +48,7 @@ export type FilterActivityLogDTO = {
   logName?: string;
   description?: string;
   subjectType?: string;
-  subjectId?: number;
+  subjectId?: string;
   event?: string;
   causerType?: string;
   causerId?: number;
