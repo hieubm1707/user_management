@@ -20,8 +20,9 @@ export default (sequelize: Sequelize): ResourceWithOptions => {
                 const logData: any = {
                   description: `Delete user ${record.params?.username || record.id}`,
                   subjectType: 'User',
+                  subjectId: record.id,
                   event: 'deleted',
-                  causerId: context.currentAdmin?.id ? Number(context.currentAdmin.id) : undefined,
+                  causerId: context.currentAdmin?.id,
                   properties: { userId: record.id }
                 };
                 if (!isNaN(Number(record.id))) {
@@ -46,9 +47,9 @@ export default (sequelize: Sequelize): ResourceWithOptions => {
           isAccessible: true,
           after: async (response: any, request: any, context: any) => {
             const { record } = response;
-            const salary = request.payload.salary;
+            const salary = request.payload.salary ?? record.salary;
             console.log('Hook after edit action called:', { record, salary });
-            if (record && record.id && salary) {
+            if (record && record.id && salary !== undefined && salary !== null) {
               await sequelize.models.SalaryModel.create({
                 userid: record.id,
                 amount: salary,
@@ -63,10 +64,12 @@ export default (sequelize: Sequelize): ResourceWithOptions => {
                   subjectType: 'User',
                   subjectId: record.id,
                   event: 'updated',
+                  causerId: context.currentAdmin?.id,
                   properties: {
                     oldSalary: record.salary,
                     newSalary: salary,
-                    user: record
+                    user: record,
+                    userEmail: record.params?.email,
                   }
                 });
               } catch (err) {
@@ -85,7 +88,7 @@ export default (sequelize: Sequelize): ResourceWithOptions => {
             const { record } = response;
             const salary = request.payload.salary;
             console.log('Hook after new action called:', { record, salary });
-            if (record && record.id && salary) {
+            if (record && record.id) {
               await sequelize.models.SalaryModel.create({
                 userid: record.id,
                 amount: salary,
@@ -100,9 +103,11 @@ export default (sequelize: Sequelize): ResourceWithOptions => {
                   subjectType: 'User',
                   subjectId: record.id,
                   event: 'created',
+                  causerId: context.currentAdmin?.id,
                   properties: {
                     salary: salary,
-                    user: record
+                    user: record,
+                    userEmail: record.params?.email
                   }
                 });
               } catch (err) {
@@ -120,10 +125,10 @@ export default (sequelize: Sequelize): ResourceWithOptions => {
         },
       },
       navigation: menu.users,
-      listProperties: ['id', 'username', 'email', 'phone', 'firstName', 'lastName', 'createdAt', 'salary'],
-      showProperties: ['id', 'username', 'email', 'phone', 'firstName', 'lastName', 'createdAt', 'updatedAt', 'salary'],
-      editProperties: ['username', 'email', 'phone', 'password', 'firstName', 'lastName','salary'],
-      filterProperties: ['username', 'email', 'phone', 'firstName', 'lastName', 'createdAt'],
+      listProperties: ['id', 'username', 'email', 'phone', 'firstName', 'lastName', 'createdAt', 'salary', 'role'],
+      showProperties: ['id', 'username', 'email', 'phone', 'firstName', 'lastName', 'salary','role', 'createdAt', 'updatedAt'],
+      editProperties: ['username', 'email', 'phone', 'password', 'role', 'salary', 'firstName', 'lastName'],
+      filterProperties: ['id','username', 'email', 'phone', 'role', 'firstName', 'lastName', 'createdAt'],
       properties: {
         password: {
           type: 'password',
@@ -131,6 +136,10 @@ export default (sequelize: Sequelize): ResourceWithOptions => {
         salary: {
           isVisible: { list: true, filter: false, show: true, edit: true },
           type: 'number',
+        },
+        role: {
+          isVisible: { list: true, filter: true, show: true, edit: true },
+          type: 'string',
         },
       },
       sort: {

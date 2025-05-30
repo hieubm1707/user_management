@@ -6,6 +6,12 @@ export default (sequelize: Sequelize): ResourceWithOptions => {
   const resource: ResourceWithOptions = {
     resource: sequelize.models.ActivityLogModel,
     options: {
+      properties: {
+        'properties.userEmail': {
+          type: 'string',
+          isVisible: { list: true, filter: true, show: true, edit: false }    
+        },
+      },
       actions: {
         delete: {
           isAccessible: true,
@@ -31,8 +37,7 @@ export default (sequelize: Sequelize): ResourceWithOptions => {
       },
       navigation: menu.activityLog,
       listProperties: [
-        'id',
-        'logName',
+        'properties.userEmail',
         'description',
         'subjectType',
         'subjectId',
