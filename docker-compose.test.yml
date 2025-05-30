@@ -1,0 +1,33 @@
+version: '3'
+
+services:
+  node:
+    build:
+      context: ./
+      dockerfile: docker/node/Dockerfile
+      target: development
+    container_name: voucher-api-test
+    entrypoint: dockerize -wait tcp://db:5432 -timeout 30s yarn test:e2e
+    depends_on:
+      - db
+    environment:
+      NODE_ENV: test
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: voucher-api-test
+      DB_PASSWORD: voucher-api-test
+      DB_NAME: voucher-api_test
+    volumes:
+      - ./src:/home/node/app/src
+      - ./test:/home/node/app/test
+      - /home/node/node_modules
+
+  db:
+    image: postgres:12.3
+    container_name: voucher-api-db-test
+    environment:
+      POSTGRES_USER: voucher-api-test
+      POSTGRES_PASSWORD: voucher-api-test
+      POSTGRES_DB: voucher-api_test
+    ports:
+      - 5432:5432

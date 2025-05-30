@@ -1,0 +1,16 @@
+{
+  "errors": {
+    "emailAlreadyUsed": "Un compte avec cette adresse email existe déjà.",
+    "internalServerError": "Erreur interne du serveur.",
+    "invalidAuthentication": "Authentification invalide.",
+    "invalidCredentials": "Identifiants incorrects.",
+    "routeNotFound": "La route '{{method}} {{baseUrl}}{{url}}' n'existe pas.",
+    "tooManyRequests": "Trop de requêtes, veuillez réessayer plus tard.",
+    "userNotFound": "Utilisateur non trouvé.",
+    "usernameAlreadyUsed": "Un compte avec ce nom d'utilisateur existe déjà.",
+    "titleAlreadyUsed": "Un titre avec ce nom existe déjà.",
+    "newsNotFound": "Actualité non trouvée.",
+    "dataNotFound": "Données non trouvées.",
+    "dataAlreadyExists": "Les données existent déjà."
+  }
+}

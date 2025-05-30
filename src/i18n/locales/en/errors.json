@@ -1,0 +1,8 @@
+{
+  "userNotFound": "User not found",
+  "invalidPassword": "Invalid password",
+  "passwordsDoNotMatch": "New password and confirm password do not match",
+  "missingFields": "Please provide all required fields",
+  "invalidEmail": "Invalid email format",
+  "passwordTooShort": "Password must be at least 8 characters long"
+} 
