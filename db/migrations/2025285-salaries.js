@@ -6,54 +6,45 @@ module.exports = {
         'salaries',
         {
             id: {
-                type: Sequelize.BIGINT,
+                type: Sequelize.UUID,
                 primaryKey: true,
-                unique: true,
                 allowNull: false,
+                unique: true,
                 field: 'id',
-                autoIncrement: true,
                 comment: 'id of the salaries',
             },
             amount:{
-                type: Sequelize.BIGINT,
-                primaryKey: false,
-                allowNull: true,
+                type: Sequelize.DOUBLE,
+                allowNull: false,
                 field: 'amount',
                 comment: 'amount of the salaries',
             },
             month:{
                 type: Sequelize.INTEGER,
-                primaryKey: false,
-                allowNull: true,
+                allowNull: false,
                 field: 'month',
                 comment: 'month of the salaries',
             },
             year: {
                 type: Sequelize.INTEGER,
-                primaryKey: false,
-                unique: false,
-                allowNull: true,
+                allowNull: false,
                 field: 'year',
                 comment: 'year of the salaries',
             },
-            createdAt: {
+            createdat: {
                 type: Sequelize.DATE,
-                primaryKey: false,
                 allowNull: false,
-                unique: false,
-                field: 'created_at',
+                field: 'createdat',
                 comment: 'createdat of the salaries',
             },
-            updatedAt: {
+            updatedat: {
                 type: Sequelize.DATE,
                 allowNull: false,
-                unique: false,
-                field: 'updated_at',
-                comment: 'timestamp of the last update of salaries',
+                field: 'updatedat',
+                comment: 'updatedat of the salaries',
             },
             userid: {
-                type: Sequelize.BIGINT,
-                foreignKey: true,
+                type: Sequelize.UUID,
                 allowNull: false,
                 field: 'userid',
                 comment: 'userid of the users',
@@ -79,11 +70,11 @@ module.exports = {
         await queryInterface.addIndex('salaries', ['year'], {
             name: 'salaries_year_idx',
         });
-        await queryInterface.addIndex('salaries', ['created_at'], {
-            name: 'salaries_created_at_idx', 
+        await queryInterface.addIndex('salaries', ['createdat'], {
+            name: 'salaries_createdat_idx', 
         });
-        await queryInterface.addIndex('salaries', ['updated_at'], {
-            name: 'salaries_updated_at_idx',
+        await queryInterface.addIndex('salaries', ['updatedat'], {
+            name: 'salaries_updatedat_idx',
         });
     },
     down: async (queryInterface, Sequelize) => {
