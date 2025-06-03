@@ -7,6 +7,7 @@ import { auth } from '../middlewares';
 import authController from './auth.controller';
 import healthController from './health.controller';
 import usersController from './users.controller';
+import salaryController from './salary.controller';
 import { RequestHandler } from 'express';
 // add new controller here
 
@@ -34,6 +35,7 @@ router.use('/auth', authController);
 router.use('/health', healthController);
 router.use('/users', auth.required as unknown as RequestHandler, usersController);
 router.use('/activity-log', activityLogController);
+router.use('/salary', salaryController);
 // add new route here
 
 export default router;
