@@ -15,4 +15,12 @@ const schemas = {
   description: Joi.string().max(255).trim(),
 };
 
-export { celebrate, Joi, schemas };
+
+const salaryschemas = {
+// Schema for salary
+salaryAmount: Joi.number().min(0).required(),
+salaryMonth: Joi.number().min(1).max(12).required(),
+salaryYear: Joi.number().min(2000).max(2100).required(),
+}
+
+export { celebrate, Joi, schemas, salaryschemas};
