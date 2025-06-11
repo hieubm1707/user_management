@@ -8,7 +8,7 @@ export default class SalaryModel extends Model<SalaryModel> {
   @Column({ type: DataType.UUID, defaultValue: DataType.UUIDV4, primaryKey: true })
   id!: string;
 
-  @Column({ type: DataType.UUID, allowNull: false })
+  @Column({ type: DataType.UUID, allowNull: false})
   @ForeignKey(() => UserModel)
   userid!: string;
 

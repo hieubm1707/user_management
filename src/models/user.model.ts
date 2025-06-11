@@ -18,19 +18,18 @@ import {
   Unique,
   UpdatedAt,
   HasMany,
+  BelongsTo,
+  ForeignKey,
 } from 'sequelize-typescript';
 import { Container } from 'typedi';
 import { UserRoleEnum } from '../types/enums';
 import { generateSignedJWT } from '../utils';
+import PositionModel from './position.model';
 
 @DefaultScope(() => ({
   attributes: {
     exclude: ['password'],
-  },
-  include: [{
-    association: 'Salaries',
-    required: false
-  }]
+  }
 }))
 @Table({
   charset: 'utf8',
@@ -103,6 +102,16 @@ export default class UserModel extends Model<UserModel> {
   @Column(DataType.DATE)
   updatedAt?: string;
 
+  @AllowNull(true)
+  @Comment('Position ID')
+  @ForeignKey(() => PositionModel)
+  @Column({ field: 'position_id', type: DataType.INTEGER })
+  positionId?: number;
+
+  @BelongsTo(() => PositionModel, { foreignKey: 'positionId', as: 'position' })
+  position?: PositionModel;
+  
+  
   @HasMany(() => require('./salary.model').default, { 
     foreignKey: 'userid',
     as: 'Salaries'

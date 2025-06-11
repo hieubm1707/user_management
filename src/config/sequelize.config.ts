@@ -3,6 +3,8 @@ import * as models from '../models';
 import { config } from './app.config';
 import { logger } from './logger.config';
 
+
+
 export const sequelizeOptions: SequelizeOptions = {
   host: config.db.host,
   port: config.db.port,

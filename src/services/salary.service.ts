@@ -2,6 +2,10 @@
 import { Model } from 'sequelize-typescript';
 import SalaryModel from '../models/salary.model';
 import { Service } from 'typedi';
+import { FilterSalaryDTO } from './../types/salary.type';
+import { Op } from 'sequelize';
+import { Sequelize } from 'sequelize';
+import UserModel from '../models/user.model';
 
 @Service()
 export class SalaryService {
@@ -59,4 +63,59 @@ export class SalaryService {
       order: [['year', 'DESC'], ['month', 'DESC']]
     });
   }
-}   
+
+  // Filter salary
+  async getSalaries(filter: FilterSalaryDTO) {
+    const where: any = {};
+
+    // Nếu có trường search (dù là rỗng), trả về tất cả lương (không filter gì)
+    if ('search' in filter) {
+      // Không thêm điều kiện gì vào where
+    } else {
+      if (filter.userId && filter.userId.trim() !== "") {
+        where.userid = filter.userId;
+      }
+      if (filter.minAmount !== undefined && filter.minAmount !== null) {
+        where.amount = { ...where.amount, [Op.gte]: filter.minAmount };
+      }
+      if (filter.maxAmount !== undefined && filter.maxAmount !== null) {
+        where.amount = { ...where.amount, [Op.lte]: filter.maxAmount };
+      }
+      if (filter.month !== undefined && filter.month !== null) {
+        where.month = filter.month;
+      }
+      if (filter.year !== undefined && filter.year !== null) {
+        where.year = filter.year;
+      }
+    }
+
+    // Sắp xếp
+    let order: [string, 'ASC' | 'DESC'][] = [];
+    if (filter.sortBy) {
+      order.push([filter.sortBy, filter.sortOrder || 'DESC']);
+    } else {
+      order = [['year', 'ASC'], ['month', 'ASC']]; // Mặc định sắp xếp theo năm tăng dần, tháng tăng dần
+    }
+
+    // Phân trang (nếu cần)
+    const page = filter.page || 1;
+    const limit = filter.limit || 20;
+    const offset = (page - 1) * limit;
+
+    const salaries = await SalaryModel.findAll({
+      where,
+      order,
+      limit,
+      offset,
+    });
+
+    return salaries;
+  }
+}
+
+
+
+
+
+
+

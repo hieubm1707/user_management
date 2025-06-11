@@ -7,6 +7,8 @@ export type User = {
   email?: string;
   phone?: string;
   createdAt?: string;
+  position?: string | null;
+  salary?: any[];
 };
 
 export type CreateUserDTO = {
@@ -20,9 +22,22 @@ export type CreateUserDTO = {
 };
 
 export type FilterUserDTO = {
+  id?: string;
   firstName?: string;
   lastName?: string;
+  username?: string;
+  phone?: string;
   email?: string;
   role?: UserRoleEnum;
   createdAt?: string;
+  search?: string;
+  positionId?: string | undefined;
 };
+
+export interface SumSalaryDTO {
+  userId: string;
+  fromMonth?: number;
+  fromYear?: number;
+  toMonth?: number;
+  toYear?: number;
+}

@@ -1,3 +1,5 @@
+import positionRouter from './controllers/position.controller';
+import filterRoutes from './features/filter/routes';
 import authRoutes from './features/auth/routes';
 import 'reflect-metadata';
 import AdminJSExpress from '@adminjs/express';
@@ -129,10 +131,14 @@ export default function initializeApp(app: Application) {
   // Mount password change router
   app.use('/auth', authRoutes);
 
+  //routing filter
+  app.use('/filter', filterRoutes);
+
+  //routing position
+  app.use('/positions', positionRouter);
   // Routing configuration
   app.use(router);
 
-  
   // 404 error handling
   app.use((req, res, next) => {
     const { baseUrl, url, method } = req;

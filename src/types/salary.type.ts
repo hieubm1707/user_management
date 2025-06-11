@@ -20,3 +20,24 @@ export type CreateSalaryDTO ={
 export type ErrorResponse = {
   error: string;
 }; 
+
+export type FilterSalaryDTO = {
+  search?: string;
+  minAmount?: number;
+  maxAmount?: number;
+  month?: number;
+  year?: number;
+  userId?: string;
+  sortBy?: 'amount' | 'month' | 'year' | 'createdAt';
+  sortOrder?: 'ASC' | 'DESC';
+  page?: number;
+  limit?: number;
+};
+
+export type SumSalaryDTO = {
+  userId: string;
+  fromMonth?: number;
+  fromYear?: number;
+  toMonth?: number;
+  toYear?: number;
+}

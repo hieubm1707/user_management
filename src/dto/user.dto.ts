@@ -11,6 +11,8 @@ export const userDTO = (user: UserModel): User => {
     phone: hidePhone(user.phone),
     createdAt: user.createdAt,
     salary: user.salary,
+    position: user.position ? user.position.name : null,
+    
   };
 
   return userDto;

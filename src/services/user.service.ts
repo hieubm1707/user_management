@@ -6,6 +6,8 @@ import { userDTO } from '../dto';
 import { UserModel } from '../models';
 import { CreateUserDTO, FilterUserDTO, User } from '../types';
 import SalaryModel from '../models/salary.model';
+import { Op, Sequelize } from 'sequelize';
+import PositionModel from '../models/position.model';
 
 @Service()
 export default class UserService {
@@ -16,7 +18,9 @@ export default class UserService {
    * Returns the details of a user or throws a `NotFound` error if not found.
    */
   async getUserById(userId: string): Promise<User> {
-    const user = await UserModel.findByPk(userId);
+    const user = await UserModel.findByPk(userId, {
+      include: [{ model: PositionModel, as: 'position' }]
+    });
 
     if (!user) {
       throw new NotFound(this.i18n.t('errors:userNotFound'));
@@ -35,23 +39,91 @@ export default class UserService {
       throw new BadRequest(this.i18n.t('errors:emailAlreadyUsed'));
     }
     const user = await UserModel.create(userDetails as CreationAttributes<UserModel>);
-
-    return userDTO(user);
+    // Truy vấn lại user kèm position
+    const userWithPosition = await UserModel.findByPk(user.id, {
+      include: [{ model: PositionModel, as: 'position' }]
+    });
+    return userDTO(userWithPosition!);
   }
 
   /**
    * Returns list users by filtering them.
    */
-
   async getUsers(filter: FilterUserDTO): Promise<User[]> {
+    const where: any = {};
+    // Handle search (search by name, username, email)
+    if (filter.search && filter.search.trim() !== "") {
+      where[Op.or] = [
+        // Change fullName to firstName, lastName if DB doesn't have fullName
+        { firstName: { [Op.like]: `%${filter.search}%` } },
+        { lastName: { [Op.like]: `%${filter.search}%` } },
+        { username: { [Op.like]: `%${filter.search}%` } },
+        { email: { [Op.like]: `%${filter.search}%` } },
+        { phone: { [Op.like]: `%${filter.search}%` } },
+        { id: { [Op.like]: `%${filter.search}%` } },
+        { role: { [Op.like]: `%${filter.search}%` } },
+      ];
+    }
+    if (filter.phone && filter.phone.trim() !== "") {
+      where.phone = filter.phone;
+    }
+    if (filter.email && filter.email.trim() !== "") {
+      where.email = filter.email;
+    }
+    if (filter.username && filter.username.trim() !== "") {
+      where.username = filter.username;
+    }
+    if (filter.id && filter.id.trim() !== "") {
+      where.id = filter.id;
+    }
+    if (filter.role && filter.role.trim() !== "") {
+      where.role = filter.role;
+    }
+    if (filter.positionId !== undefined) {
+      if (Number(filter.positionId) === 0) {
+        where.positionId = null; // Lọc user chưa có chức vụ
+      } else {
+        where.positionId = Number(filter.positionId); // Lọc user theo chức vụ cụ thể
+      }
+    }
+
     const users = await UserModel.findAll({
-      where: filter,
-      include: [{
-        model: SalaryModel,
-        as: 'Salaries',
-      }],
+      where,
+      include: [
+        { model: PositionModel, as: 'position' },
+        { model: SalaryModel, as: 'Salaries' }
+      ],
     });
     return users.map(userDTO);
+  }
+
+
+  /**
+   * Update user by id
+   */
+  async updateUser(userId: string, updateData: Partial<CreateUserDTO>): Promise<User> {
+    const user = await UserModel.findByPk(userId);
+    if (!user) {
+      throw new NotFound(this.i18n.t('errors:userNotFound'));
+    }
+    await user.update(updateData);
+    // Truy vấn lại user kèm position
+    const userWithPosition = await UserModel.findByPk(user.id, {
+      include: [{ model: PositionModel, as: 'position' }]
+    });
+    return userDTO(userWithPosition!);
+  }
+
+
+  /**
+   * Delete user by id
+   */
+  async deleteUser(userId: string): Promise<void> {
+    const user = await UserModel.findByPk(userId);
+    if (!user) {
+      throw new NotFound(this.i18n.t('errors:userNotFound'));
+    }
+    await user.destroy();
   }
 
   /// //// Add the following methods here ///////
