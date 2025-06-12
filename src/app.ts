@@ -1,4 +1,3 @@
-import positionRouter from './controllers/position.controller';
 import filterRoutes from './features/filter/routes';
 import authRoutes from './features/auth/routes';
 import 'reflect-metadata';
@@ -18,7 +17,6 @@ import i18nHttpMiddleware from 'i18next-http-middleware';
 import { join } from 'path';
 import { Sequelize } from 'sequelize';
 import favicon from 'serve-favicon';
-import SocketIO from 'socket.io';
 import { Container } from 'typedi';
 import setupAdminJs, { authenticateAdmin } from './admin';
 import { Config } from './config';
@@ -134,8 +132,6 @@ export default function initializeApp(app: Application) {
   //routing filter
   app.use('/filter', filterRoutes);
 
-  //routing position
-  app.use('/positions', positionRouter);
   // Routing configuration
   app.use(router);
 
