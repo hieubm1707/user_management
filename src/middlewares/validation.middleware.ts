@@ -33,10 +33,14 @@ const filterSalarySchema = Joi.object({
   month: salaryschemas.salaryMonth.optional(),
   year: salaryschemas.salaryYear.optional(),
   userId: schemas.uuid.optional(),
+  fromMonth: Joi.number().integer().min(1).max(12).optional(),
+  fromYear: Joi.number().integer().min(2000).max(2100).optional(),
+  toMonth: Joi.number().integer().min(1).max(12).optional(),
+  toYear: Joi.number().integer().min(2000).max(2100).optional(),
   sortBy: Joi.string().valid('amount', 'month', 'year', 'createdAt').optional(),
   sortOrder: Joi.string().valid('ASC', 'DESC').optional(),
 })
-  .or('search', 'minAmount', 'maxAmount', 'month', 'year', 'userId');
+  .or('search', 'minAmount', 'maxAmount', 'month', 'year', 'userId', 'fromMonth', 'fromYear', 'toMonth', 'toYear');
 
 
 // Validation for userFilter API
@@ -51,14 +55,40 @@ const userFilterSchema = Joi.object({
   }).or('search', 'id', 'username', 'phone', 'email', 'role', 'positionId');
  
   
-// validation for sumsalary
+
+
+//validation for sumsalary
 const sumSalarySchema = Joi.object({
-  userId: schemas.uuid.optional(),
+  userId: schemas.uuid.required(),
   fromMonth: Joi.number().integer().min(1).max(12).required(),
   fromYear: Joi.number().integer().min(2000).max(2100).required(),
-  toMonth: Joi.number().integer().min(1).max(12).required(),
-  toYear: Joi.number().integer().min(2000).max(2100).required(),
+  toMonth: Joi.number().integer().min(1).max(12).required().min(Joi.ref('fromMonth')),
+  toYear: Joi.number().integer().min(2000).max(2100).required().min(Joi.ref('fromYear')),
 })
 
 
-export { celebrate, Joi, schemas,userFilterSchema ,salaryschemas,filterSalarySchema,sumSalarySchema};
+
+
+// validation for date range
+import { Request, Response, NextFunction } from 'express';
+function validateDateRangeQuery(req: Request, res: Response, next: NextFunction) {
+  const { fromMonth, fromYear, toMonth, toYear } = req.query;
+  // Chuyển về số nguyên
+  const fM = Number(fromMonth);
+  const fY = Number(fromYear);
+  const tM = Number(toMonth);
+  const tY = Number(toYear);
+
+  // Nếu fromYear > toYear, hoặc cùng năm mà fromMonth > toMonth thì báo lỗi
+  if (fY > tY || (fY === tY && fM > tM)) {
+    return res.status(400).json({
+      error: 'Invalid date range. From date must be before or equal to to date'
+    });
+  }
+  return next();
+}
+
+
+
+
+export { celebrate, Joi, schemas,userFilterSchema ,salaryschemas,filterSalarySchema,sumSalarySchema,validateDateRangeQuery};

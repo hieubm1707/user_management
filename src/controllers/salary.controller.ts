@@ -5,10 +5,71 @@ import { Container } from 'typedi';
 import { SalaryService } from '../services/salary.service';
 import { validation } from '../middlewares';
 import { Salary, CreateSalaryDTO, ErrorResponse, FilterSalaryDTO } from '../types/salary.type';
-import { Joi, celebrate, filterSalarySchema, sumSalarySchema } from '../middlewares/validation.middleware';
+import { Joi, celebrate, filterSalarySchema,sumSalarySchema, validateDateRangeQuery } from '../middlewares/validation.middleware';
 import UserModel from '../models/user.model'
 
+
+/** Calculate the total salary of a user within a time range
+ * GET /salary/sumsalary
+ */
 const router = Router();
+router.get(
+  '/sumsalary',
+    celebrate({
+      query: sumSalarySchema,
+     }), validateDateRangeQuery,
+  async (req, res) => {
+    const { userId, fromMonth, fromYear, toMonth, toYear } = req.query as any;
+    try {
+      // Convert parameters to integer
+      const parsedFromMonth = parseInt(fromMonth as string, 10);
+      const parsedFromYear = parseInt(fromYear as string, 10);
+      const parsedToMonth = parseInt(toMonth as string, 10);
+      const parsedToYear = parseInt(toYear as string, 10);
+      // Use SalaryService to calculate total salary
+      const result = await Container.get(SalaryService).getSalarySumByDateRange({
+        userId: userId as string,
+        fromMonth: parsedFromMonth,
+        fromYear: parsedFromYear,
+        toMonth: parsedToMonth,
+        toYear: parsedToYear,
+      });
+      return res.status(200).json(result);
+    } catch (error) {
+      // Cast error to access message
+      const err = error as Error;
+      return res.status(400).json({ message: err.message });
+    }
+  }
+);
+
+
+
+/** Calculate the total salary of all users within a time range
+ * GET /salary/sumall
+ */
+router.get<{}, { total: number }>(
+  '/sumall',
+  celebrate({
+    query: Joi.object({
+      fromMonth: Joi.number().min(1).max(12).required(),
+      fromYear: Joi.number().min(2000).required(),
+      toMonth: Joi.number().min(1).max(12).required(),
+      toYear: Joi.number().min(2000).required(),
+    }),
+  }),validateDateRangeQuery,
+  async (req, res) => {
+    const { fromMonth, fromYear, toMonth, toYear } = req.query;
+    const total = await Container.get(SalaryService).getTotalSalaryByDateRange(
+      parseInt(fromMonth as string),
+      parseInt(fromYear as string),
+      parseInt(toMonth as string),
+      parseInt(toYear as string)
+    );
+    return res.status(200).json({ total });
+  }
+);
+
 
 
 /**
@@ -18,7 +79,7 @@ router.get<{}, any, {}, any>(
   '/filter',
   validation.celebrate({
     query: filterSalarySchema,
-  }),
+  }),validateDateRangeQuery,
   async (req, res) => {
     const filter = req.query;
     const salaries = await Container.get(SalaryService).getSalaries(filter as any);
@@ -31,11 +92,10 @@ router.get<{}, any, {}, any>(
 );
 
 
-
 /**
  * GET /salary/:userId
  */
-router.get<{ userId: string }, Salary[]>(
+router.get<{ userId: string }, Salary[] | { message: string }>(
   '/:userId',
   validation.celebrate({
     params: {
@@ -45,6 +105,9 @@ router.get<{ userId: string }, Salary[]>(
   async (req, res) => {
     const { userId } = req.params;
     const salaries = await Container.get(SalaryService).getSalaryByUser(userId);
+    if (!salaries || salaries.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
     return res.status(200).json(salaries);
   }
 );
@@ -96,7 +159,6 @@ router.get<{ userId: string; year: string; month: string }, Salary | ErrorRespon
     return res.status(200).json(salary);
   }
 );
-
 
 
 /**
@@ -170,7 +232,6 @@ router.put<{ userId: string; year: string; month: string }, Salary | ErrorRespon
 );
 
 
-
 /**
  * DELETE /salary/:userId/:year/:month
  * Delete salary by userId, year, month (all via path param)
@@ -202,41 +263,8 @@ router.delete<{ userId: string; year: string; month: string }, { message: string
   }
 );
 
-/**
- * GET /salary/sum-salary
- * Tính tổng lương của 1 user trong khoảng thời gian
- * Query: userId, fromMonth, fromYear, toMonth, toYear
- */
-router.get('/sumsalary', async (req, res) => {
-  const { error, value } = sumSalarySchema.validate(req.query);
-  if (error) {
-    return res.status(400).json({ message: error.message });
-  }
-  const { userId, fromMonth, fromYear, toMonth, toYear } = value;
-  // Tính tổng lương cho 1 user
-  const { Op } = require('sequelize');
-  const SalaryModel = require('../models/salary.model').default;
-  const total = await SalaryModel.sum('amount', {
-    where: {
-      userid: userId,
-      [Op.and]: [
-        {
-          [Op.or]: [
-            { year: { [Op.gt]: fromYear } },
-            { year: fromYear, month: { [Op.gte]: fromMonth } }
-          ]
-        },
-        {
-          [Op.or]: [
-            { year: { [Op.lt]: toYear } },
-            { year: toYear, month: { [Op.lte]: toMonth } }
-          ]
-        }
-      ]
-    }
-  });
 
-  return res.json({ userId, totalSalary: total || 0 });
-});
+
+
 
 export default router;

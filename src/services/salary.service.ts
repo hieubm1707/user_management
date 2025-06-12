@@ -64,13 +64,15 @@ export class SalaryService {
     });
   }
 
+
+
   // Filter salary
   async getSalaries(filter: FilterSalaryDTO) {
     const where: any = {};
 
-    // Nếu có trường search (dù là rỗng), trả về tất cả lương (không filter gì)
+    // If there is a 'search' field (even if empty), return all salaries (no filter)
     if ('search' in filter) {
-      // Không thêm điều kiện gì vào where
+   
     } else {
       if (filter.userId && filter.userId.trim() !== "") {
         where.userid = filter.userId;
@@ -87,17 +89,37 @@ export class SalaryService {
       if (filter.year !== undefined && filter.year !== null) {
         where.year = filter.year;
       }
+      // Add filter by date range
+      if (
+        filter.fromMonth !== undefined && filter.fromYear !== undefined &&
+        filter.toMonth !== undefined && filter.toYear !== undefined
+      ) {
+        where[Op.and] = [
+          {
+            [Op.or]: [
+              { year: { [Op.gt]: filter.fromYear } },
+              { year: filter.fromYear, month: { [Op.gte]: filter.fromMonth } }
+            ]
+          },
+          {
+            [Op.or]: [
+              { year: { [Op.lt]: filter.toYear } },
+              { year: filter.toYear, month: { [Op.lte]: filter.toMonth } }
+            ]
+          }
+        ];
+      }
     }
 
-    // Sắp xếp
+    // Sorting
     let order: [string, 'ASC' | 'DESC'][] = [];
     if (filter.sortBy) {
       order.push([filter.sortBy, filter.sortOrder || 'DESC']);
     } else {
-      order = [['year', 'ASC'], ['month', 'ASC']]; // Mặc định sắp xếp theo năm tăng dần, tháng tăng dần
+      order = [['year', 'ASC'], ['month', 'ASC']]; // Default: sort by year ascending, month ascending
     }
 
-    // Phân trang (nếu cần)
+    // Pagination (if needed)
     const page = filter.page || 1;
     const limit = filter.limit || 20;
     const offset = (page - 1) * limit;
@@ -110,6 +132,86 @@ export class SalaryService {
     });
 
     return salaries;
+  }
+
+
+  // Calculate the total salary of a user within a date range
+  async getSalarySumByDateRange(params: {
+    userId: string;
+    fromMonth: number;
+    fromYear: number;
+    toMonth: number;
+    toYear: number;
+  }) {
+    const { userId, fromMonth, fromYear, toMonth, toYear } = params;
+    // Check if user exists
+    const user = await UserModel.findByPk(userId);
+    if (!user) {
+      throw new Error('User not found');
+    }
+    // Where condition for date range
+    const where: any = {
+      userid: userId,
+      [Op.and]: [
+        {
+          [Op.or]: [
+            { year: { [Op.gt]: fromYear } },
+            { year: fromYear, month: { [Op.gte]: fromMonth } }
+          ]
+        },
+        {
+          [Op.or]: [
+            { year: { [Op.lt]: toYear } },
+            { year: toYear, month: { [Op.lte]: toMonth } }
+          ]
+        }
+      ]
+    };
+    // Get salary list in the date range
+    const salaries = await SalaryModel.findAll({
+      where,
+      order: [['year', 'ASC'], ['month', 'ASC']]
+    });
+    // Calculate total
+    const total = salaries.reduce((sum, salary) => sum + salary.amount, 0);
+    return {
+      userId,
+      fromMonth,
+      fromYear,
+      toMonth,
+      toYear,
+      total,
+      count: salaries.length,
+      details: salaries
+    };
+  }
+
+
+
+  // Calculate the total salary of all users within a date range
+  async getTotalSalaryByDateRange(fromMonth: number, fromYear: number, toMonth: number, toYear: number) {
+    const where: any = {
+      [Op.and]: [
+        {
+          [Op.or]: [
+            { year: { [Op.gt]: fromYear } },
+            { year: fromYear, month: { [Op.gte]: fromMonth } }
+          ]
+        },
+        {
+          [Op.or]: [
+            { year: { [Op.lt]: toYear } },
+            { year: toYear, month: { [Op.lte]: toMonth } }
+          ]
+        }
+      ]
+    };
+    const salaries = await SalaryModel.findAll({
+      where,
+      order: [['year', 'ASC'], ['month', 'ASC']]
+    });
+    const total = salaries.reduce((sum, salary) => sum + salary.amount, 0);
+    return total;
   }
 }
 

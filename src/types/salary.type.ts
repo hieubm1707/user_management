@@ -32,12 +32,17 @@ export type FilterSalaryDTO = {
   sortOrder?: 'ASC' | 'DESC';
   page?: number;
   limit?: number;
-};
-
-export type SumSalaryDTO = {
-  userId: string;
   fromMonth?: number;
   fromYear?: number;
   toMonth?: number;
   toYear?: number;
-}
+};
+
+export type SalarySumFilterDTO = {
+  userId: string;
+  fromMonth: number;
+  fromYear: number;
+  toMonth: number;
+  toYear: number;
+};
+
