@@ -130,7 +130,7 @@ export default function initializeApp(app: Application) {
   app.use('/auth', authRoutes);
 
   //routing filter
-  app.use('/filter', filterRoutes);
+  //app.use('/filter', filterRoutes);
 
   // Routing configuration
   app.use(router);

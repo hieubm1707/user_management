@@ -64,15 +64,13 @@ export class SalaryService {
     });
   }
 
-
-
   // Filter salary
   async getSalaries(filter: FilterSalaryDTO) {
     const where: any = {};
 
-    // If there is a 'search' field (even if empty), return all salaries (no filter)
+    // If there is a search, return all (no filter)
     if ('search' in filter) {
-   
+      // ... keep as is if there is custom search logic
     } else {
       if (filter.userId && filter.userId.trim() !== "") {
         where.userid = filter.userId;
@@ -84,12 +82,18 @@ export class SalaryService {
         where.amount = { ...where.amount, [Op.lte]: filter.maxAmount };
       }
       if (filter.month !== undefined && filter.month !== null) {
+        if (!filter.year) throw new Error('If month is provided, year must also be provided!');
         where.month = filter.month;
-      }
-      if (filter.year !== undefined && filter.year !== null) {
+        where.year = filter.year;
+      } else if (filter.year !== undefined && filter.year !== null) {
+        // If only year is provided, get the whole year
         where.year = filter.year;
       }
-      // Add filter by date range
+      // Handle filter by range
+      if (filter.fromMonth && !filter.fromYear) throw new Error('Must provide fromYear if fromMonth is provided!');
+      if (filter.toMonth && !filter.toYear) throw new Error('Must provide toYear if toMonth is provided!');
+
+      // If both from and to are provided
       if (
         filter.fromMonth !== undefined && filter.fromYear !== undefined &&
         filter.toMonth !== undefined && filter.toYear !== undefined
@@ -108,6 +112,24 @@ export class SalaryService {
             ]
           }
         ];
+      } else if (filter.fromMonth !== undefined && filter.fromYear !== undefined) {
+        // If only from is provided => get from that point to the end
+        where[Op.or] = [
+          { year: { [Op.gt]: filter.fromYear } },
+          { year: filter.fromYear, month: { [Op.gte]: filter.fromMonth } }
+        ];
+      } else if (filter.toMonth !== undefined && filter.toYear !== undefined) {
+        // If only to is provided => get from the beginning to that point
+        where[Op.or] = [
+          { year: { [Op.lt]: filter.toYear } },
+          { year: filter.toYear, month: { [Op.lte]: filter.toMonth } }
+        ];
+      } else if (filter.fromYear !== undefined) {
+        // If only fromYear is provided => get from the start of that year to the end
+        where.year = { [Op.gte]: filter.fromYear };
+      } else if (filter.toYear !== undefined) {
+        // If only toYear is provided => get from the beginning to the end of that year
+        where.year = { [Op.lte]: filter.toYear };
       }
     }
 
@@ -116,7 +138,7 @@ export class SalaryService {
     if (filter.sortBy) {
       order.push([filter.sortBy, filter.sortOrder || 'DESC']);
     } else {
-      order = [['year', 'ASC'], ['month', 'ASC']]; // Default: sort by year ascending, month ascending
+      order = [['year', 'ASC'], ['month', 'ASC']];
     }
 
     // Pagination (if needed)
@@ -133,7 +155,6 @@ export class SalaryService {
 
     return salaries;
   }
-
 
   // Calculate the total salary of a user within a date range
   async getSalarySumByDateRange(params: {
@@ -185,8 +206,6 @@ export class SalaryService {
       details: salaries
     };
   }
-
-
 
   // Calculate the total salary of all users within a date range
   async getTotalSalaryByDateRange(fromMonth: number, fromYear: number, toMonth: number, toYear: number) {
