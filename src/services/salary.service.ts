@@ -68,69 +68,64 @@ export class SalaryService {
   async getSalaries(filter: FilterSalaryDTO) {
     const where: any = {};
 
-    // If there is a search, return all (no filter)
-    if ('search' in filter) {
-      // ... keep as is if there is custom search logic
-    } else {
-      if (filter.userId && filter.userId.trim() !== "") {
-        where.userid = filter.userId;
-      }
-      if (filter.minAmount !== undefined && filter.minAmount !== null) {
-        where.amount = { ...where.amount, [Op.gte]: filter.minAmount };
-      }
-      if (filter.maxAmount !== undefined && filter.maxAmount !== null) {
-        where.amount = { ...where.amount, [Op.lte]: filter.maxAmount };
-      }
-      if (filter.month !== undefined && filter.month !== null) {
-        if (!filter.year) throw new Error('If month is provided, year must also be provided!');
-        where.month = filter.month;
-        where.year = filter.year;
-      } else if (filter.year !== undefined && filter.year !== null) {
-        // If only year is provided, get the whole year
-        where.year = filter.year;
-      }
-      // Handle filter by range
-      if (filter.fromMonth && !filter.fromYear) throw new Error('Must provide fromYear if fromMonth is provided!');
-      if (filter.toMonth && !filter.toYear) throw new Error('Must provide toYear if toMonth is provided!');
+    if (filter.userId && filter.userId.trim() !== "") {
+      where.userid = filter.userId;
+    }
+    if (filter.minAmount !== undefined && filter.minAmount !== null) {
+      where.amount = { ...where.amount, [Op.gte]: filter.minAmount };
+    }
+    if (filter.maxAmount !== undefined && filter.maxAmount !== null) {
+      where.amount = { ...where.amount, [Op.lte]: filter.maxAmount };
+    }
+    if (filter.month !== undefined && filter.month !== null) {
+      if (!filter.year) throw new Error('If month is provided, year must also be provided!');
+      where.month = filter.month;
+      where.year = filter.year;
+    } else if (filter.year !== undefined && filter.year !== null) {
+      // If only year is provided, get the whole year
+      where.year = filter.year;
+    }
+    // Handle filter by range
+    if (filter.fromMonth && !filter.fromYear) throw new Error('Must provide fromYear if fromMonth is provided!');
+    if (filter.toMonth && !filter.toYear) throw new Error('Must provide toYear if toMonth is provided!');
 
-      // If both from and to are provided
-      if (
-        filter.fromMonth !== undefined && filter.fromYear !== undefined &&
-        filter.toMonth !== undefined && filter.toYear !== undefined
-      ) {
-        where[Op.and] = [
-          {
-            [Op.or]: [
-              { year: { [Op.gt]: filter.fromYear } },
-              { year: filter.fromYear, month: { [Op.gte]: filter.fromMonth } }
-            ]
-          },
-          {
-            [Op.or]: [
-              { year: { [Op.lt]: filter.toYear } },
-              { year: filter.toYear, month: { [Op.lte]: filter.toMonth } }
-            ]
-          }
-        ];
-      } else if (filter.fromMonth !== undefined && filter.fromYear !== undefined) {
-        // If only from is provided => get from that point to the end
-        where[Op.or] = [
-          { year: { [Op.gt]: filter.fromYear } },
-          { year: filter.fromYear, month: { [Op.gte]: filter.fromMonth } }
-        ];
-      } else if (filter.toMonth !== undefined && filter.toYear !== undefined) {
-        // If only to is provided => get from the beginning to that point
-        where[Op.or] = [
-          { year: { [Op.lt]: filter.toYear } },
-          { year: filter.toYear, month: { [Op.lte]: filter.toMonth } }
-        ];
-      } else if (filter.fromYear !== undefined) {
-        // If only fromYear is provided => get from the start of that year to the end
-        where.year = { [Op.gte]: filter.fromYear };
-      } else if (filter.toYear !== undefined) {
-        // If only toYear is provided => get from the beginning to the end of that year
-        where.year = { [Op.lte]: filter.toYear };
-      }
+    // If both from and to are provided
+    if (
+      filter.fromMonth !== undefined && filter.fromYear !== undefined &&
+      filter.toMonth !== undefined && filter.toYear !== undefined
+    ) {
+      where[Op.and] = [
+        {
+          [Op.or]: [
+            { year: { [Op.gt]: filter.fromYear } },
+            { year: filter.fromYear, month: { [Op.gte]: filter.fromMonth } }
+          ]
+        },
+        {
+          [Op.or]: [
+            { year: { [Op.lt]: filter.toYear } },
+            { year: filter.toYear, month: { [Op.lte]: filter.toMonth } }
+          ]
+        }
+      ];
+    } else if (filter.fromMonth !== undefined && filter.fromYear !== undefined) {
+      // If only from is provided => get from that point to the end
+      where[Op.or] = [
+        { year: { [Op.gt]: filter.fromYear } },
+        { year: filter.fromYear, month: { [Op.gte]: filter.fromMonth } }
+      ];
+    } else if (filter.toMonth !== undefined && filter.toYear !== undefined) {
+      // If only to is provided => get from the beginning to that point
+      where[Op.or] = [
+        { year: { [Op.lt]: filter.toYear } },
+        { year: filter.toYear, month: { [Op.lte]: filter.toMonth } }
+      ];
+    } else if (filter.fromYear !== undefined) {
+      // If only fromYear is provided => get from the start of that year to the end
+      where.year = { [Op.gte]: filter.fromYear };
+    } else if (filter.toYear !== undefined) {
+      // If only toYear is provided => get from the beginning to the end of that year
+      where.year = { [Op.lte]: filter.toYear };
     }
 
     // Sorting
