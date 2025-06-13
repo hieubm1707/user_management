@@ -31,6 +31,20 @@ router.get<{}, any, {}, FilterUserDTO>(
 
 
 /**
+ * GET /
+ *
+ * Get all users
+ */
+router.get<{}, any>(
+  '/',
+  async (req, res) => {
+    const users = await Container.get(UserService).getUsers({});
+    res.status(200).json(users);
+  },
+);
+
+
+/**
  * GET /users/:userId
  *
  * Get user details
