@@ -8,7 +8,7 @@ import { CreateUserDTO, FilterUserDTO, User } from '../types';
 import SalaryModel from '../models/salary.model';
 import { Op, Sequelize } from 'sequelize';
 import PositionModel from '../models/position.model';
-
+import { validate as isUuid } from 'uuid';
 @Service()
 export default class UserService {
   @Inject('i18n')
@@ -55,13 +55,12 @@ export default class UserService {
     if (filter.search && filter.search.trim() !== "") {
       where[Op.or] = [
         // Change fullName to firstName, lastName if DB doesn't have fullName
-        { firstName: { [Op.like]: `%${filter.search}%` } },
-        { lastName: { [Op.like]: `%${filter.search}%` } },
-        { username: { [Op.like]: `%${filter.search}%` } },
-        { email: { [Op.like]: `%${filter.search}%` } },
-        { phone: { [Op.like]: `%${filter.search}%` } },
-        { id: { [Op.like]: `%${filter.search}%` } },
-        { role: { [Op.like]: `%${filter.search}%` } },
+        { firstName: { [Op.iLike]: `%${filter.search}%` } },
+        { lastName: { [Op.iLike]: `%${filter.search}%` } },
+        { username: { [Op.iLike]: `%${filter.search}%` } },
+        { email: { [Op.iLike]: `%${filter.search}%` } },
+        { phone: { [Op.iLike]: `%${filter.search}%` } },
+        
       ];
     }
     if (filter.phone && filter.phone.trim() !== "") {
@@ -81,9 +80,9 @@ export default class UserService {
     }
     if (filter.positionId !== undefined) {
       if (Number(filter.positionId) === 0) {
-        where.positionId = null; // Lọc user chưa có chức vụ
+        where.positionId = null; // Filter users without a position
       } else {
-        where.positionId = Number(filter.positionId); // Lọc user theo chức vụ cụ thể
+        where.positionId = Number(filter.positionId); // Filter users by specific position
       }
     }
 
@@ -107,7 +106,7 @@ export default class UserService {
       throw new NotFound(this.i18n.t('errors:userNotFound'));
     }
     await user.update(updateData);
-    // Truy vấn lại user kèm position
+  // Query user again with position included
     const userWithPosition = await UserModel.findByPk(user.id, {
       include: [{ model: PositionModel, as: 'position' }]
     });
