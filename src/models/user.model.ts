@@ -58,10 +58,11 @@ export default class UserModel extends Model<UserModel> {
   @Column(DataType.STRING(64))
   lastName!: string;
 
-  @AllowNull(true)
+  @AllowNull(false)
+  @Unique
   @Comment('Email of the user')
   @Column(DataType.STRING(128))
-  email?: string;
+  email!: string;
 
   @AllowNull(true)
   @Comment('phone of the user')

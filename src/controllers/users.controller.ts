@@ -5,8 +5,10 @@ import { UserService } from '../services';
 import { CreateUserDTO, FilterUserDTO, User } from '../types';
 import { userFilterSchema } from '../middlewares/validation.middleware';
 import { NotFound } from 'http-errors';
-const router = Router();
+import { checkPermission } from '../middlewares/permission.middleware';
+import { Response } from 'express';
 
+const router = Router();
 
 /**
  * GET /users/filter
@@ -15,6 +17,7 @@ const router = Router();
  */
 router.get<{}, any, {}, FilterUserDTO>(
   '/filter',
+  checkPermission(),
   validation.celebrate({
     query: userFilterSchema,
   }),
@@ -29,7 +32,6 @@ router.get<{}, any, {}, FilterUserDTO>(
   },
 );
 
-
 /**
  * GET /
  *
@@ -37,12 +39,27 @@ router.get<{}, any, {}, FilterUserDTO>(
  */
 router.get<{}, any>(
   '/',
+  checkPermission(),
   async (req, res) => {
     const users = await Container.get(UserService).getUsers({});
     res.status(200).json(users);
   },
 );
 
+/**
+ * GET /me
+ *
+ * Get owns user details
+ */
+router.get(
+  '/me',
+  checkPermission(),
+  async (req, res) => {
+    const user = req.auth;
+    if (!user) return res.status(401).json({ message: 'Chưa đăng nhập!' });
+    return res.status(200).json(user);
+  },
+);
 
 /**
  * GET /users/:userId
@@ -51,6 +68,7 @@ router.get<{}, any>(
  */
 router.get<{ userId: string }, User>(
   '/:userId',
+  checkPermission(),
   validation.celebrate({
     params: {
       userId: validation.schemas.uuid.required(),
@@ -58,13 +76,10 @@ router.get<{ userId: string }, User>(
   }),
   async (req, res) => {
     const { userId } = req.params;
-
     const user = await Container.get(UserService).getUserById(userId);
-
     res.status(200).json(user);
   },
 );
-
 
 /**
  * POST /users
@@ -73,6 +88,7 @@ router.get<{ userId: string }, User>(
  */
 router.post<{}, User, CreateUserDTO>(
   '/',
+  checkPermission(),
   validation.celebrate({
     body: validation.Joi.object({
       firstName: validation.schemas.firstName.required(),
@@ -86,21 +102,19 @@ router.post<{}, User, CreateUserDTO>(
   }),
   async (req, res) => {
     const userDetails = req.body;
-
     const user = await Container.get(UserService).createUser(userDetails);
-
     res.status(201).json(user);
   },
 );
 
-
 /**
  * PUT /users/:userId
  *
- * Update user info 
+ * Update user info
  */
 router.put<{ userId: string }, any, Partial<CreateUserDTO>>(
   '/:userId',
+  checkPermission(),
   validation.celebrate({
     params: {
       userId: validation.schemas.uuid.required(),
@@ -125,17 +139,17 @@ router.put<{ userId: string }, any, Partial<CreateUserDTO>>(
     }
     const updatedUser = await userService.updateUser(userId, updateData);
     return res.status(200).json({ message: 'User updated successfully', user: updatedUser });
-  }
+  },
 );
 
-
 /**
- * delete /users/:userId
+ * DELETE /users/:userId
  *
  * Delete user
  */
 router.delete<{ userId: string }, any>(
   '/:userId',
+  checkPermission(),
   validation.celebrate({
     params: {
       userId: validation.schemas.uuid.required(),
@@ -149,12 +163,12 @@ router.delete<{ userId: string }, any>(
         return res.status(404).json({ message: 'User not found' });
       }
       await Container.get(UserService).deleteUser(userId);
-      return res.status(204).send();
+      // Trả về message thay vì 204
+      return res.status(200).json({ message: 'User deleted successfully' });
     } catch (error: any) {
       return res.status(500).json({ message: 'Error deleting user', error: error.message });
     }
   },
 );
-
 
 export default router;
