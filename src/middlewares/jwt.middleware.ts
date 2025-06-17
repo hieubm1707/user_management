@@ -34,7 +34,7 @@ const secretCallback = (
         password: string;
       };
 
-      (req as any).userData = authUser as AuthUser;
+      req.userData = authUser as AuthUser;
 
       const secret = getJwtSecret(user.password);
 
@@ -46,12 +46,12 @@ const secretCallback = (
 export const auth = {
   required: jwt({
     algorithms: ['HS256'],
-    secret: secretCallback as any,
+    secret: secretCallback as any ,
     requestProperty: 'jwt',
   }),
   optional: jwt({
     algorithms: ['HS256'],
-    secret: secretCallback as any,
+    secret: secretCallback as any ,
     credentialsRequired: false,
     requestProperty: 'jwt',
   }),
