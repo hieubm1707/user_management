@@ -3,7 +3,7 @@ import morgan from 'morgan';
 import { Container } from 'typedi';
 import { Logger } from 'winston';
 import { activityLogController } from '../features/activity-log';
-import { auth } from '../middlewares';
+import { auth, assignUserToAuth } from '../middlewares';
 import authController from './auth.controller';
 import healthController from './health.controller';
 import usersController from './users.controller';
@@ -35,9 +35,9 @@ router.use(
  */
 router.use('/auth', authController);
 router.use('/health', healthController);
-router.use('/users', auth.required as unknown as RequestHandler, usersController);
+router.use('/users', auth.required as unknown as RequestHandler, assignUserToAuth, usersController);
 router.use('/activity-log', activityLogController);
-router.use('/salary', salaryController);
+router.use('/salary', auth.required as unknown as RequestHandler, assignUserToAuth, salaryController);
 router.use('/positions', positionRouter);
 
 
