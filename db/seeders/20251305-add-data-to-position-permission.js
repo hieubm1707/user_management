@@ -3,13 +3,13 @@
 module.exports = {
   async up(queryInterface, Sequelize) {
     // DIRECTOR: all permissions (1-10)
-    const directorPermissions = [1,2,3,4,5,6,7,8,9,10];
+    const directorPermissions = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15];
     // MANAGER: view_user, view_salary, add_salary, update_salary (1,5,6,7,9,10)
-    const managerPermissions = [1,5,6,7,9,10];
+    const managerPermissions = [1,2,5,6,7,8,13,14,15];
     // STAFF: view_user, view_salary (1,5,9,10)
-    const staffPermissions = [9,10];
+    const staffPermissions = [5,12];
     // INTERN: view_salary (9,10)
-    const internPermissions = [9,10];
+    const internPermissions = [5,12];
 
     const now = new Date();
     const data = [];
