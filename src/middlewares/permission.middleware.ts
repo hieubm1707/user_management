@@ -6,7 +6,7 @@ import { QueryTypes } from 'sequelize';
 import { AuthUser } from '../types';
 
 function getRequiredPermission(req: Request): string | undefined {
-  const key = `${req.method} ${req.route?.path || ''}`;
+  const key = `${req.method} ${req.baseUrl}${req.route?.path || ''}`;
   console.log('KEY:', key);
   return (mapPermission as Record<string, string>)[key];
 }
