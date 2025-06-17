@@ -227,6 +227,23 @@ export class SalaryService {
     const total = salaries.reduce((sum, salary) => sum + salary.amount, 0);
     return total;
   }
+
+  async getUserSalaries(userId: string) {
+    try {
+      const salaries = await SalaryModel.findAll({
+        where: {
+          userid: userId
+        },
+        order: [
+          ['year', 'DESC'],
+          ['month', 'DESC']
+        ]
+      });
+      return salaries;
+    } catch (error) {
+      throw error;
+    }
+  }
 }
 
 

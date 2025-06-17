@@ -1,32 +1,50 @@
-// src/controllers/salary.controller.ts
 import { UserService } from '../services';
-import { Router } from 'express';
+import { Router, Response } from 'express';
 import { Container } from 'typedi';
 import { SalaryService } from '../services/salary.service';
 import { validation } from '../middlewares';
 import { Salary, CreateSalaryDTO, ErrorResponse, FilterSalaryDTO } from '../types/salary.type';
-import { Joi, celebrate, filterSalarySchema,sumSalarySchema, validateDateRangeQuery } from '../middlewares/validation.middleware';
-import UserModel from '../models/user.model'
+import { Joi, celebrate, filterSalarySchema, sumSalarySchema, validateDateRangeQuery } from '../middlewares/validation.middleware';
+import UserModel from '../models/user.model';
+import { AuthUser } from '../types';
+import { checkPermission } from '../middlewares/permission.middleware';
+import { auth } from '../middlewares/jwt.middleware';
 
+const router = Router();
+
+/**
+ * API: GET /my-salaries
+ * Mô tả: Lấy danh sách lương của người dùng đang đăng nhập
+ */
+router.get(
+  '/me',
+  checkPermission(),
+  async (req, res) => {
+    const user = req.auth as AuthUser;
+    if (!user) return res.status(401).json({ message: 'Chưa đăng nhập!' });
+
+    const salaries = await Container.get(SalaryService).getUserSalaries(user.id);
+    return res.status(200).json(salaries);
+  }
+);
 
 /** Calculate the total salary of a user within a time range
  * GET /salary/sumsalary
  */
-const router = Router();
 router.get(
   '/sumsalary',
-    celebrate({
-      query: sumSalarySchema,
-     }), validateDateRangeQuery,
+  checkPermission(),
+  celebrate({
+    query: sumSalarySchema,
+  }),
+  validateDateRangeQuery,
   async (req, res) => {
     const { userId, fromMonth, fromYear, toMonth, toYear } = req.query as any;
     try {
-      // Convert parameters to integer
       const parsedFromMonth = parseInt(fromMonth as string, 10);
       const parsedFromYear = parseInt(fromYear as string, 10);
       const parsedToMonth = parseInt(toMonth as string, 10);
       const parsedToYear = parseInt(toYear as string, 10);
-      // Use SalaryService to calculate total salary
       const result = await Container.get(SalaryService).getSalarySumByDateRange({
         userId: userId as string,
         fromMonth: parsedFromMonth,
@@ -36,20 +54,18 @@ router.get(
       });
       return res.status(200).json(result);
     } catch (error) {
-      // Cast error to access message
       const err = error as Error;
       return res.status(400).json({ message: err.message });
     }
   }
 );
 
-
-
 /** Calculate the total salary of all users within a time range
  * GET /salary/sumall
  */
-router.get<{}, { total: number }>(
+router.get(
   '/sumall',
+  checkPermission(),
   celebrate({
     query: Joi.object({
       fromMonth: Joi.number().min(1).max(12).required(),
@@ -57,7 +73,8 @@ router.get<{}, { total: number }>(
       toMonth: Joi.number().min(1).max(12).required(),
       toYear: Joi.number().min(2000).required(),
     }),
-  }),validateDateRangeQuery,
+  }),
+  validateDateRangeQuery,
   async (req, res) => {
     const { fromMonth, fromYear, toMonth, toYear } = req.query;
     const total = await Container.get(SalaryService).getTotalSalaryByDateRange(
@@ -70,33 +87,32 @@ router.get<{}, { total: number }>(
   }
 );
 
-
-
 /**
  * GET /salary/filter
  */
-router.get<{}, any, {}, any>(
+router.get(
   '/filter',
+  checkPermission(),
   validation.celebrate({
     query: filterSalarySchema,
-  }),validateDateRangeQuery,
+  }),
+  validateDateRangeQuery,
   async (req, res) => {
     const filter = req.query;
     const salaries = await Container.get(SalaryService).getSalaries(filter as any);
     if (salaries.length === 0) {
-      res.status(404).json({ message: 'No matching results found' });
-      return;
+      return res.status(404).json({ message: 'No matching results found' });
     }
     return res.status(200).json(salaries);
   }
 );
 
-
 /**
  * GET /salary/:userId
  */
-router.get<{ userId: string }, Salary[] | { message: string }>(
+router.get(
   '/:userId',
+  checkPermission(),
   validation.celebrate({
     params: {
       userId: validation.schemas.uuid.required(),
@@ -112,12 +128,12 @@ router.get<{ userId: string }, Salary[] | { message: string }>(
   }
 );
 
-
 /**
  * GET /salary/
  */
-router.get<{}, Salary[] | { message: string }>(
+router.get(
   '/',
+  checkPermission(),
   celebrate({
     query: Joi.object({
       userId: Joi.string().guid().optional(),
@@ -137,12 +153,12 @@ router.get<{}, Salary[] | { message: string }>(
   }
 );
 
-
 /**
  * GET /salary/:userId/:year/:month
  */
-router.get<{ userId: string; year: string; month: string }, Salary | ErrorResponse>(
+router.get(
   '/:userId/:year/:month',
+  checkPermission(),
   validation.celebrate({
     params: {
       userId: validation.schemas.uuid.required(),
@@ -160,12 +176,12 @@ router.get<{ userId: string; year: string; month: string }, Salary | ErrorRespon
   }
 );
 
-
 /**
  * POST /salary/:userId
  */
-router.post<{ userId: string }, Salary | ErrorResponse, CreateSalaryDTO>(
+router.post(
   '/:userId',
+  checkPermission(),
   validation.celebrate({
     params: {
       userId: validation.schemas.uuid.required(),
@@ -182,9 +198,7 @@ router.post<{ userId: string }, Salary | ErrorResponse, CreateSalaryDTO>(
       return res.status(400).json({ error: 'userId is required' });
     }
 
-
-  // Check if userId exists
-  const user = await UserModel.findByPk(userId);
+    const user = await UserModel.findByPk(userId);
     if (!user) {
       return res.status(400).json({ error: 'UserId does not exist' });
     }
@@ -194,13 +208,12 @@ router.post<{ userId: string }, Salary | ErrorResponse, CreateSalaryDTO>(
   }
 );
 
-
 /**
  * PUT /salary/:userId/:year/:month
- * Update salary by userId, year, month (all via path param)
  */
-router.put<{ userId: string; year: string; month: string }, Salary | ErrorResponse, { amount: number }>(
+router.put(
   '/:userId/:year/:month',
+  checkPermission(),
   validation.celebrate({
     params: {
       userId: validation.schemas.uuid.required(),
@@ -214,30 +227,26 @@ router.put<{ userId: string; year: string; month: string }, Salary | ErrorRespon
   async (req, res) => {
     const { userId, year, month } = req.params;
     const { amount } = req.body;
-    // Check if userId exists
     const user = await UserModel.findByPk(userId);
     if (!user) {
       return res.status(400).json({ error: 'UserId does not exist' });
     }
-    // Check if salary record exists
     const salaryService = Container.get(SalaryService);
     const oldSalary = await salaryService.getSalaryByMonth(userId, parseInt(year), parseInt(month));
     if (!oldSalary) {
       return res.status(404).json({ error: 'Salary not found' });
     }
-    // Update amount
     const updatedSalary = await oldSalary.update({ amount });
     return res.status(200).json(updatedSalary);
   }
 );
 
-
 /**
  * DELETE /salary/:userId/:year/:month
- * Delete salary by userId, year, month (all via path param)
  */
-router.delete<{ userId: string; year: string; month: string }, { message: string } | ErrorResponse, {}>(
+router.delete(
   '/:userId/:year/:month',
+  checkPermission(),
   validation.celebrate({
     params: {
       userId: validation.schemas.uuid.required(),
@@ -247,12 +256,10 @@ router.delete<{ userId: string; year: string; month: string }, { message: string
   }),
   async (req, res) => {
     const { userId, year, month } = req.params;
-    // Check if userId exists
     const user = await UserModel.findByPk(userId);
     if (!user) {
       return res.status(400).json({ error: 'UserId does not exist' });
     }
-    // Check if salary record exists
     const salaryService = Container.get(SalaryService);
     const oldSalary = await salaryService.getSalaryByMonth(userId, parseInt(year), parseInt(month));
     if (!oldSalary) {
@@ -262,9 +269,5 @@ router.delete<{ userId: string; year: string; month: string }, { message: string
     return res.status(200).json({ message: 'Deleted successfully' });
   }
 );
-
-
-
-
 
 export default router;
