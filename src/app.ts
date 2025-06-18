@@ -129,9 +129,6 @@ export default function initializeApp(app: Application) {
   // Mount password change router
   app.use('/auth', authRoutes);
 
-  //routing filter
-  //app.use('/filter', filterRoutes);
-
   // Routing configuration
   app.use(router);
 
