@@ -1,4 +1,4 @@
-import filterRoutes from './features/filter/routes';
+
 import authRoutes from './features/auth/routes';
 import 'reflect-metadata';
 import AdminJSExpress from '@adminjs/express';
