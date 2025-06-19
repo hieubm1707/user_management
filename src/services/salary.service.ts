@@ -8,6 +8,7 @@ import { Sequelize } from 'sequelize';
 import UserModel from '../models/user.model';
 import { salaryDTO } from '../dto/salary.dto';
 import { SalarySumResult } from '../types/salary.type';
+
 @Service()
 export class SalaryService {
   async getSalaryByUser(userId: string): Promise<Salary[]> {
@@ -18,6 +19,7 @@ export class SalaryService {
     return salaries.map(salaryDTO);
   }
 
+  
   async getSalaryByMonth(userId: string, year: number, month: number): Promise<Salary | null> {
     const salary = await SalaryModel.findOne({
       where: { 
@@ -76,7 +78,7 @@ export class SalaryService {
 
 
 
-  async getAllSalaries() {
+  async getAllSalaries(): Promise<Salary[]> {
     const salaries = await SalaryModel.findAll({
       order: [['year', 'DESC'], ['month', 'DESC']]
     });
@@ -84,7 +86,7 @@ export class SalaryService {
   }
 
   // Filter salary
-  async getSalaries(filter: FilterSalaryDTO) {
+  async getSalaries(filter: FilterSalaryDTO): Promise<Salary[]> {
     const where: any = {};
 
     if (filter.userId && filter.userId.trim() !== "") {
@@ -247,7 +249,8 @@ export class SalaryService {
     return total;
   }
 
-  async getUserSalaries(userId: string) {
+  // Get all salaries of a user
+  async getUserSalaries(userId: string): Promise<Salary[]> {
     try {
       const salaries = await SalaryModel.findAll({
         where: {
@@ -258,7 +261,7 @@ export class SalaryService {
           ['month', 'DESC']
         ]
       });
-      return salaries;
+      return salaries.map(salaryDTO);
     } catch (error) {
       throw error;
     }
