@@ -8,7 +8,7 @@ import authController from './auth.controller';
 import healthController from './health.controller';
 import usersController from './users.controller';
 import salaryController from './salary.controller';
-import positionRouter from './position.controller';
+import positionController from './position.controller';
 
 import { RequestHandler } from 'express';
 // add new controller here
@@ -37,8 +37,9 @@ router.use('/auth', authController);
 router.use('/health', healthController);
 router.use('/users', auth.required as unknown as RequestHandler, assignUserToAuth, usersController);
 router.use('/activity-log', activityLogController);
-router.use('/salary', auth.required as unknown as RequestHandler, assignUserToAuth, salaryController);
-router.use('/positions', positionRouter);
+router.use('/salary', salaryController);
+router.use('/positions', positionController);
+
 
 
 export default router;

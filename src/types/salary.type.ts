@@ -46,3 +46,14 @@ export type SalarySumFilterDTO = {
   toYear: number;
 };
 
+export interface SalarySumResult {
+  userId: string;
+  fromMonth: number;
+  fromYear: number;
+  toMonth: number;
+  toYear: number;
+  total: number;
+  count: number;
+  details: Salary[];
+}
+
