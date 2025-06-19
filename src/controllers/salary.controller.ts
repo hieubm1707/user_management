@@ -1,17 +1,101 @@
 // src/controllers/salary.controller.ts
+import { UserService } from '../services';
 import { Router } from 'express';
 import { Container } from 'typedi';
 import { SalaryService } from '../services/salary.service';
 import { validation } from '../middlewares';
-import { Salary, CreateSalaryDTO, ErrorResponse } from '../types/salary.type';
-import { Joi, celebrate } from '../middlewares/validation.middleware';
+import { Salary, CreateSalaryDTO, ErrorResponse, FilterSalaryDTO } from '../types/salary.type';
+import { Joi, celebrate, filterSalarySchema,sumSalarySchema, validateDateRangeQuery } from '../middlewares/validation.middleware';
 import UserModel from '../models/user.model'
+
+
+/** Calculate the total salary of a user within a time range
+ * GET /salary/sumsalary
+ */
 const router = Router();
+router.get(
+  '/sumsalary',
+    celebrate({
+      query: sumSalarySchema,
+     }), validateDateRangeQuery,
+  async (req, res) => {
+    const { userId, fromMonth, fromYear, toMonth, toYear } = req.query as any;
+    try {
+      // Convert parameters to integer
+      const parsedFromMonth = parseInt(fromMonth as string, 10);
+      const parsedFromYear = parseInt(fromYear as string, 10);
+      const parsedToMonth = parseInt(toMonth as string, 10);
+      const parsedToYear = parseInt(toYear as string, 10);
+      // Use SalaryService to calculate total salary
+      const result = await Container.get(SalaryService).getSalarySumByDateRange({
+        userId: userId as string,
+        fromMonth: parsedFromMonth,
+        fromYear: parsedFromYear,
+        toMonth: parsedToMonth,
+        toYear: parsedToYear,
+      });
+      return res.status(200).json(result);
+    } catch (error) {
+      // Cast error to access message
+      const err = error as Error;
+      return res.status(400).json({ message: err.message });
+    }
+  }
+);
+
+
+
+/** Calculate the total salary of all users within a time range
+ * GET /salary/sumall
+ */
+router.get<{}, { total: number }>(
+  '/sumall',
+  celebrate({
+    query: Joi.object({
+      fromMonth: Joi.number().min(1).max(12).required(),
+      fromYear: Joi.number().min(2000).required(),
+      toMonth: Joi.number().min(1).max(12).required(),
+      toYear: Joi.number().min(2000).required(),
+    }),
+  }),validateDateRangeQuery,
+  async (req, res) => {
+    const { fromMonth, fromYear, toMonth, toYear } = req.query;
+    const total = await Container.get(SalaryService).getTotalSalaryByDateRange(
+      parseInt(fromMonth as string),
+      parseInt(fromYear as string),
+      parseInt(toMonth as string),
+      parseInt(toYear as string)
+    );
+    return res.status(200).json({ total });
+  }
+);
+
+
+
+/**
+ * GET /salary/filter
+ */
+router.get<{}, any, {}, any>(
+  '/filter',
+  validation.celebrate({
+    query: filterSalarySchema,
+  }),validateDateRangeQuery,
+  async (req, res) => {
+    const filter = req.query;
+    const salaries = await Container.get(SalaryService).getSalaries(filter as any);
+    if (salaries.length === 0) {
+      res.status(404).json({ message: 'No matching results found' });
+      return;
+    }
+    return res.status(200).json(salaries);
+  }
+);
+
 
 /**
  * GET /salary/:userId
  */
-router.get<{ userId: string }, Salary[]>(
+router.get<{ userId: string }, Salary[] | { message: string }>(
   '/:userId',
   validation.celebrate({
     params: {
@@ -21,9 +105,13 @@ router.get<{ userId: string }, Salary[]>(
   async (req, res) => {
     const { userId } = req.params;
     const salaries = await Container.get(SalaryService).getSalaryByUser(userId);
+    if (!salaries || salaries.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
     return res.status(200).json(salaries);
   }
 );
+
 
 /**
  * GET /salary/
@@ -48,6 +136,8 @@ router.get<{}, Salary[] | { message: string }>(
     return res.status(200).json(salaries);
   }
 );
+
+
 /**
  * GET /salary/:userId/:year/:month
  */
@@ -70,6 +160,7 @@ router.get<{ userId: string; year: string; month: string }, Salary | ErrorRespon
   }
 );
 
+
 /**
  * POST /salary/:userId
  */
@@ -90,8 +181,10 @@ router.post<{ userId: string }, Salary | ErrorResponse, CreateSalaryDTO>(
     if (!userId) {
       return res.status(400).json({ error: 'userId is required' });
     }
-    // Check if userId exists
-    const user = await UserModel.findByPk(userId);
+
+
+  // Check if userId exists
+  const user = await UserModel.findByPk(userId);
     if (!user) {
       return res.status(400).json({ error: 'UserId does not exist' });
     }
@@ -100,6 +193,7 @@ router.post<{ userId: string }, Salary | ErrorResponse, CreateSalaryDTO>(
     return res.status(201).json(salary);
   }
 );
+
 
 /**
  * PUT /salary/:userId/:year/:month
@@ -125,17 +219,13 @@ router.put<{ userId: string; year: string; month: string }, Salary | ErrorRespon
     if (!user) {
       return res.status(400).json({ error: 'UserId does not exist' });
     }
-    // Check if salary record exists
+    // Use service method to update salary
     const salaryService = Container.get(SalaryService);
-    const oldSalary = await salaryService.getSalaryByMonth(userId, parseInt(year), parseInt(month));
-    if (!oldSalary) {
-      return res.status(404).json({ error: 'Salary not found' });
-    }
-    // Update amount
-    const updatedSalary = await oldSalary.update({ amount });
+    const updatedSalary = await salaryService.updateSalary(userId, parseInt(year), parseInt(month), { amount });
     return res.status(200).json(updatedSalary);
   }
 );
+
 
 /**
  * DELETE /salary/:userId/:year/:month
@@ -157,15 +247,15 @@ router.delete<{ userId: string; year: string; month: string }, { message: string
     if (!user) {
       return res.status(400).json({ error: 'UserId does not exist' });
     }
-    // Check if salary record exists
+    // Use service method to delete salary
     const salaryService = Container.get(SalaryService);
-    const oldSalary = await salaryService.getSalaryByMonth(userId, parseInt(year), parseInt(month));
-    if (!oldSalary) {
-      return res.status(404).json({ error: 'Salary not found' });
-    }
-    await oldSalary.destroy();
+    await salaryService.deleteSalary(userId, parseInt(year), parseInt(month));
     return res.status(200).json({ message: 'Deleted successfully' });
   }
 );
+
+
+
+
 
 export default router;

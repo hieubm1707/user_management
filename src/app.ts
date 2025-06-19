@@ -1,3 +1,4 @@
+
 import authRoutes from './features/auth/routes';
 import 'reflect-metadata';
 import AdminJSExpress from '@adminjs/express';
@@ -16,7 +17,6 @@ import i18nHttpMiddleware from 'i18next-http-middleware';
 import { join } from 'path';
 import { Sequelize } from 'sequelize';
 import favicon from 'serve-favicon';
-import SocketIO from 'socket.io';
 import { Container } from 'typedi';
 import setupAdminJs, { authenticateAdmin } from './admin';
 import { Config } from './config';
@@ -132,7 +132,6 @@ export default function initializeApp(app: Application) {
   // Routing configuration
   app.use(router);
 
-  
   // 404 error handling
   app.use((req, res, next) => {
     const { baseUrl, url, method } = req;

@@ -2,9 +2,60 @@ import Router from 'express-promise-router';
 import { Container } from 'typedi';
 import { validation } from '../middlewares';
 import { UserService } from '../services';
-import { CreateUserDTO, FilterUserDTO, User } from '../types';
+import { 
+  CreateUserDTO, 
+  FilterUserDTO, 
+  User, 
+  UserResponseDTO, 
+  UsersResponseDTO, 
+  UpdateUserResponseDTO,
+  DeleteUserResponseDTO 
+} from '../types';
+import { userFilterSchema } from '../middlewares/validation.middleware';
 
 const router = Router();
+
+/**
+ * GET /users/filter
+ *
+ * Get users list by filtering
+ */
+router.get<{}, UsersResponseDTO, {}, FilterUserDTO>(
+  '/filter',
+  validation.celebrate({
+    query: userFilterSchema,
+  }),
+  async (req, res) => {
+    const filter = req.query;
+    const users = await Container.get(UserService).getUsers(filter);
+    
+    res.status(200).json({
+      success: true,
+      data: users,
+      total: users.length,
+      message: users.length > 0 ? 'Users found successfully' : 'No users found'
+    });
+  },
+);
+
+/**
+ * GET /
+ *
+ * Get all users
+ */
+router.get<{}, UsersResponseDTO>(
+  '/',
+  async (req, res) => {
+    const users = await Container.get(UserService).getUsers({});
+    
+    res.status(200).json({
+      success: true,
+      data: users,
+      total: users.length,
+      message: 'All users retrieved successfully'
+    });
+  },
+);
 
 /**
  * GET /users/:userId
@@ -20,7 +71,6 @@ router.get<{ userId: string }, User>(
   }),
   async (req, res) => {
     const { userId } = req.params;
-
     const user = await Container.get(UserService).getUserById(userId);
 
     res.status(200).json(user);
@@ -32,7 +82,7 @@ router.get<{ userId: string }, User>(
  *
  * Create new user
  */
-router.post<{}, User, CreateUserDTO>(
+router.post<{}, UserResponseDTO, CreateUserDTO>(
   '/',
   validation.celebrate({
     body: validation.Joi.object({
@@ -42,28 +92,81 @@ router.post<{}, User, CreateUserDTO>(
       username: validation.schemas.username.required(),
       email: validation.schemas.email,
       phone: validation.schemas.phone,
+      positionId: validation.schemas.positionId,
     }).required(),
   }),
   async (req, res) => {
     const userDetails = req.body;
-
     const user = await Container.get(UserService).createUser(userDetails);
 
-    res.status(201).json(user);
+    res.status(201).json({
+      success: true,
+      data: user,
+      message: 'User created successfully'
+    });
   },
 );
 
 /**
- * GET /users
+ * PUT /users/:userId
  *
- * Get users list by filtering
+ * Update user info 
  */
-router.get<{}, User[], {}, FilterUserDTO>('/', async (req, res) => {
-  const filter = req.query;
+router.put<{ userId: string }, UpdateUserResponseDTO, Partial<CreateUserDTO>>(
+  '/:userId',
+  validation.celebrate({
+    params: {
+      userId: validation.schemas.uuid.required(),
+    },
+    body: validation.Joi.object({
+      firstName: validation.schemas.firstName.optional(),
+      lastName: validation.schemas.lastName.optional(),
+      password: validation.schemas.password.optional(),
+      username: validation.schemas.username.optional(),
+      email: validation.schemas.email.optional(),
+      phone: validation.schemas.phone.optional(),
+      positionId: validation.schemas.positionId.optional(),
+    }).min(1),
+  }),
+  async (req, res) => {
+    const { userId } = req.params;
+    const updateData = req.body;
+    const userService = Container.get(UserService);
+    
+    // Service sẽ throw NotFound nếu user không tồn tại
+    const updatedUser = await userService.updateUser(userId, updateData);
+    
+    res.status(200).json({
+      success: true,
+      data: updatedUser,
+      message: 'User updated successfully'
+    });
+  }
+);
 
-  const users = await Container.get(UserService).getUsers(filter);
-
-  res.status(200).json(users);
-});
+/**
+ * DELETE /users/:userId
+ *
+ * Delete user
+ */
+router.delete<{ userId: string }, DeleteUserResponseDTO>(
+  '/:userId',
+  validation.celebrate({
+    params: {
+      userId: validation.schemas.uuid.required(),
+    },
+  }),
+  async (req, res) => {
+    const { userId } = req.params;
+    
+    // Service sẽ throw NotFound nếu user không tồn tại
+    await Container.get(UserService).deleteUser(userId);
+    
+    res.status(200).json({
+      success: true,
+      message: 'User deleted successfully'
+    });
+  },
+);
 
 export default router;

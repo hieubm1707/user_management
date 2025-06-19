@@ -48,6 +48,11 @@ module.exports = {
                 allowNull: false,
                 field: 'userid',
                 comment: 'userid of the users',
+                references: {
+                  model: 'users',
+                  key: 'id'
+                },
+                onDelete: 'CASCADE'
             }
         },
         {
