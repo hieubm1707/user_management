@@ -219,14 +219,9 @@ router.put<{ userId: string; year: string; month: string }, Salary | ErrorRespon
     if (!user) {
       return res.status(400).json({ error: 'UserId does not exist' });
     }
-    // Check if salary record exists
+    // Use service method to update salary
     const salaryService = Container.get(SalaryService);
-    const oldSalary = await salaryService.getSalaryByMonth(userId, parseInt(year), parseInt(month));
-    if (!oldSalary) {
-      return res.status(404).json({ error: 'Salary not found' });
-    }
-    // Update amount
-    const updatedSalary = await oldSalary.update({ amount });
+    const updatedSalary = await salaryService.updateSalary(userId, parseInt(year), parseInt(month), { amount });
     return res.status(200).json(updatedSalary);
   }
 );
@@ -252,13 +247,9 @@ router.delete<{ userId: string; year: string; month: string }, { message: string
     if (!user) {
       return res.status(400).json({ error: 'UserId does not exist' });
     }
-    // Check if salary record exists
+    // Use service method to delete salary
     const salaryService = Container.get(SalaryService);
-    const oldSalary = await salaryService.getSalaryByMonth(userId, parseInt(year), parseInt(month));
-    if (!oldSalary) {
-      return res.status(404).json({ error: 'Salary not found' });
-    }
-    await oldSalary.destroy();
+    await salaryService.deleteSalary(userId, parseInt(year), parseInt(month));
     return res.status(200).json({ message: 'Deleted successfully' });
   }
 );
