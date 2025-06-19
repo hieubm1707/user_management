@@ -34,6 +34,31 @@ export type FilterUserDTO = {
   positionId?: string | undefined;
 };
 
+// Response DTOs
+export type UserResponseDTO = {
+  success: boolean;
+  data: User;
+  message?: string;
+};
+
+export type UsersResponseDTO = {
+  success: boolean;
+  data: User[];
+  message?: string;
+  total?: number;
+};
+
+export type UpdateUserResponseDTO = {
+  success: boolean;
+  data: User;
+  message: string;
+};
+
+export type DeleteUserResponseDTO = {
+  success: boolean;
+  message: string;
+};
+
 export interface SumSalaryDTO {
   userId: string;
   fromMonth?: number;
