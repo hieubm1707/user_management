@@ -13,13 +13,14 @@ export default class AuthService {
   /**
    * Authenticates a user and returns a JWT token.
    */
-  async login(username: string, password: string): Promise<LoginRes> {
+  async login(email: string, password: string): Promise<LoginRes> {
     // Check if a user with this email exists
     const user = await UserModel.findOne({
       attributes: {
         include: ['password'],
       },
-      where: { username },
+      where: { email },
+      include:['position']
     });
 
     if (!user) {

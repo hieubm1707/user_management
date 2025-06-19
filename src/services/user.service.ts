@@ -9,6 +9,7 @@ import SalaryModel from '../models/salary.model';
 import { Op, Sequelize } from 'sequelize';
 import PositionModel from '../models/position.model';
 import { validate as isUuid } from 'uuid';
+
 @Service()
 export default class UserService {
   @Inject('i18n')
@@ -30,24 +31,7 @@ export default class UserService {
   }
 
   /**
-   * Creates a new user or throws a `BadRequest` error if a user with the same email address already exists.
-   */
-  async createUser(userDetails: CreateUserDTO): Promise<User> {
-    const existingUser = await UserModel.findOne({ where: { username: userDetails.username } });
-
-    if (existingUser) {
-      throw new BadRequest(this.i18n.t('errors:emailAlreadyUsed'));
-    }
-    const user = await UserModel.create(userDetails as CreationAttributes<UserModel>);
-    // Truy vấn lại user kèm position
-    const userWithPosition = await UserModel.findByPk(user.id, {
-      include: [{ model: PositionModel, as: 'position' }]
-    });
-    return userDTO(userWithPosition!);
-  }
-
-  /**
-   * Returns list users by filtering them.
+   * Get users by filter
    */
   async getUsers(filter: FilterUserDTO): Promise<User[]> {
     const where: any = {};
@@ -96,6 +80,21 @@ export default class UserService {
     return users.map(userDTO);
   }
 
+  /**
+   * Create new user
+   */
+  async createUser(userDetails: CreateUserDTO): Promise<User> {
+    const existingUser = await UserModel.findOne({ where: { username: userDetails.username } });
+
+    if (existingUser) {
+      throw new BadRequest(this.i18n.t('errors:emailAlreadyUsed'));
+    }
+    const user = await UserModel.create(userDetails as CreationAttributes<UserModel>);
+    const userWithPosition = await UserModel.findByPk(user.id, {
+      include: [{ model: PositionModel, as: 'position' }]
+    });
+    return userDTO(userWithPosition!);
+  }
 
   /**
    * Update user by id
@@ -106,13 +105,11 @@ export default class UserService {
       throw new NotFound(this.i18n.t('errors:userNotFound'));
     }
     await user.update(updateData);
-  // Query user again with position included
     const userWithPosition = await UserModel.findByPk(user.id, {
       include: [{ model: PositionModel, as: 'position' }]
     });
     return userDTO(userWithPosition!);
   }
-
 
   /**
    * Delete user by id
@@ -124,6 +121,4 @@ export default class UserService {
     }
     await user.destroy();
   }
-
-  /// //// Add the following methods here ///////
 }

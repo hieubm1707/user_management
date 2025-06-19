@@ -2,35 +2,35 @@ import PositionModel from '../models/position.model';
 import UserModel from '../models/user.model';
 
 class PositionService {
-  // Lấy tất cả các chức vụ
+  // Get all positions
   async getAllPositions() {
     return PositionModel.findAll();
   }
 
-  // Lấy chức vụ theo id
+  // Get position by id
   async getPositionById(id: number) {
     return PositionModel.findByPk(id);
   }
 
-  // Kiểm tra chức vụ có tồn tại không
+  // Check if position exists
   async exists(id: number): Promise<boolean> {
     const count = await PositionModel.count({ where: { id } });
     return count > 0;
   }
 
-  // (Tuỳ chọn) Lấy tất cả user thuộc một position
+  // (Optional) Get all users belonging to a position
   async getUsersByPositionId(id: number) {
     return PositionModel.findByPk(id, {
       include: [{ model: UserModel, as: 'users' }]
     });
   }
 
-  // Thêm mới position
+  // Add new position
   async createPosition(data: { name: string, description?: string }) {
     return PositionModel.create(data as any);
   }
 
-  // Cập nhật position
+  // Update position
   async updatePosition(id: number, data: { name?: string, description?: string }) {
     const position = await PositionModel.findByPk(id);
     if (!position) return null;
@@ -38,7 +38,7 @@ class PositionService {
     return position;
   }
 
-  // Xóa position
+  // Delete position
   async deletePosition(id: number) {
     const deleted = await PositionModel.destroy({ where: { id } });
     return deleted > 0;

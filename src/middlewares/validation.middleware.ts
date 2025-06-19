@@ -73,13 +73,13 @@ const sumSalarySchema = Joi.object({
 import { Request, Response, NextFunction } from 'express';
 function validateDateRangeQuery(req: Request, res: Response, next: NextFunction) {
   const { fromMonth, fromYear, toMonth, toYear } = req.query;
-  // Chuyển về số nguyên
+  // Convert to integer
   const fM = Number(fromMonth);
   const fY = Number(fromYear);
   const tM = Number(toMonth);
   const tY = Number(toYear);
 
-  // Nếu fromYear > toYear, hoặc cùng năm mà fromMonth > toMonth thì báo lỗi
+  // If fromYear > toYear, or same year but fromMonth > toMonth then show error
   if (fY > tY || (fY === tY && fM > tM)) {
     return res.status(400).json({
       error: 'Invalid date range. From date must be before or equal to to date'
