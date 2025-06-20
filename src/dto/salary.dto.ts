@@ -10,7 +10,6 @@ export const salaryDTO = (salary: SalaryModel): Salary =>  {
       year: salary.year,
       // createdAt: salary.createdAt,
       // updatedAt: salary.updatedAt,
-      // ... các trường cần thiết khác
     };
     return salaryDto;
   };
