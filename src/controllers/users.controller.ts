@@ -9,14 +9,18 @@ import {
   UserResponseDTO, 
   UsersResponseDTO, 
   UpdateUserResponseDTO,
-  DeleteUserResponseDTO 
+  DeleteUserResponseDTO,
+  AuthUser
 } from '../types';
 import { userFilterSchema } from '../middlewares/validation.middleware';
 import { NotFound } from 'http-errors';
 import { checkPermission } from '../middlewares/permission.middleware';
 import { Response } from 'express';
+import { mapUserAuthToDTO } from '../dto/user.dto';
+
 
 const router = Router();
+
 
 /**
  * GET /users/filter
@@ -32,7 +36,6 @@ router.get<{}, UsersResponseDTO, {}, FilterUserDTO>(
   async (req, res) => {
     const filter = req.query;
     const users = await Container.get(UserService).getUsers(filter);
-    
     res.status(200).json({
       success: true,
       data: users,
@@ -41,6 +44,7 @@ router.get<{}, UsersResponseDTO, {}, FilterUserDTO>(
     });
   },
 );
+
 
 /**
  * GET /
@@ -52,7 +56,6 @@ router.get<{}, UsersResponseDTO>(
   checkPermission(),
   async (req, res) => {
     const users = await Container.get(UserService).getUsers({});
-    
     res.status(200).json({
       success: true,
       data: users,
@@ -68,12 +71,12 @@ router.get<{}, UsersResponseDTO>(
  *
  * Get owns user details
  */
-router.get(
+router.get<{}, User>(
   '/me',
   checkPermission(),
   async (req, res) => {
-    const user = req.auth;
-    if (!user) return res.status(401).json({ message: 'Chưa đăng nhập!' });
+    const userService = Container.get(UserService);
+    const user = userService.getOwnUserData(req.auth as AuthUser);
     return res.status(200).json(user);
   },
 );
@@ -99,12 +102,13 @@ router.get<{ userId: string }, User>(
   },
 );
 
+
 /**
  * POST /users
  *
  * Create new user
  */
-router.post<{}, UserResponseDTO, CreateUserDTO>(
+router.post<{}, User, CreateUserDTO>(
   '/',
   checkPermission(),
   validation.celebrate({
@@ -121,23 +125,17 @@ router.post<{}, UserResponseDTO, CreateUserDTO>(
   async (req, res) => {
     const userDetails = req.body;
     const user = await Container.get(UserService).createUser(userDetails);
-
-
-    res.status(201).json({
-      success: true,
-      data: user,
-      message: 'User created successfully'
-    });
-
+    return res.status(200).json(user);
   },
 );
+  
 
 /**
  * PUT /users/:userId
  *
  * Update user info
  */
-router.put<{ userId: string }, UpdateUserResponseDTO, Partial<CreateUserDTO>>(
+router.put<{ userId: string }, User, Partial<CreateUserDTO>>(
   '/:userId',
   checkPermission(),
   validation.celebrate({
@@ -155,28 +153,21 @@ router.put<{ userId: string }, UpdateUserResponseDTO, Partial<CreateUserDTO>>(
     }).min(1),
   }),
   async (req, res) => {
-    const { userId } = req.params;
-    const updateData = req.body;
-    const userService = Container.get(UserService);
-    
-    // Service sẽ throw NotFound nếu user không tồn tại
-    const updatedUser = await userService.updateUser(userId, updateData);
-    
-    res.status(200).json({
-      success: true,
-      data: updatedUser,
-      message: 'User updated successfully'
-    });
+    const updatedUser = await Container.get(UserService).updateUser(
+      req.params.userId, 
+      req.body
+    );
+    res.status(200).json(updatedUser);
   }
-
 );
+
 
 /**
  * DELETE /users/:userId
  *
  * Delete user
  */
-router.delete<{ userId: string }, DeleteUserResponseDTO>(
+router.delete<{ userId: string }, string>(
   '/:userId',
   checkPermission(),
   validation.celebrate({
@@ -185,18 +176,11 @@ router.delete<{ userId: string }, DeleteUserResponseDTO>(
     },
   }),
   async (req, res) => {
-
-    const { userId } = req.params;
-    
-    // Service sẽ throw NotFound nếu user không tồn tại
-    await Container.get(UserService).deleteUser(userId);
-    
-    res.status(200).json({
-      success: true,
-      message: 'User deleted successfully'
-    });
+    await Container.get(UserService).deleteUser(req.params.userId);
+    res.status(200).json('Đã xóa thành công');
   },
 );
+
 
 export default router;
 
