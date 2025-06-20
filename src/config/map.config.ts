@@ -3,11 +3,11 @@ export const mapPermission: Record<string, string> = {
   // user routes 
     'GET /users/filter': 'use_filter',               
     'GET /users': 'view_user',                        
+    'GET /users/': 'view_user',
     'GET /users/me': 'view_own_user', 
-    'Get /users'  : 'view_all_user' ,
-    'GET /users/': 'view_all_user',              
     'GET /users/:userId': 'view_user',               
     'POST /users': 'create_user',                     
+    'POST /users/': 'create_user',
     'PUT /users/:userId': 'update_user',             
     'DELETE /users/:userId': 'delete_user', 
     
