@@ -177,7 +177,7 @@ router.delete<{ userId: string }, string>(
   }),
   async (req, res) => {
     await Container.get(UserService).deleteUser(req.params.userId);
-    res.status(200).json('Đã xóa thành công');
+    res.status(200).json('User deleted successfully');
   },
 );
 
