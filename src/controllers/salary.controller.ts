@@ -1,28 +1,22 @@
-import { UserService } from '../services';
 import { Router, Response } from 'express';
 import { Container } from 'typedi';
 import { SalaryService } from '../services/salary.service';
 import { validation } from '../middlewares';
-import { Salary, CreateSalaryDTO, ErrorResponse, FilterSalaryDTO } from '../types/salary.type';
 import { Joi, celebrate, filterSalarySchema, sumSalarySchema, validateDateRangeQuery } from '../middlewares/validation.middleware';
 import UserModel from '../models/user.model';
 import { AuthUser } from '../types';
-import { checkPermission } from '../middlewares/permission.middleware';
-import { auth } from '../middlewares/jwt.middleware';
 
 const router = Router();
 
 /**
  * API: GET /my-salaries
- * Mô tả: Lấy danh sách lương của người dùng đang đăng nhập
+ * Description: Get the salary list of the currently logged-in user
  */
 router.get(
   '/me',
-  checkPermission(),
   async (req, res) => {
     const user = req.auth as AuthUser;
-    if (!user) return res.status(401).json({ message: 'Chưa đăng nhập!' });
-
+    if (!user) return res.status(401).json({ message: 'Unauthorized' });
     const salaries = await Container.get(SalaryService).getUserSalaries(user.id);
     return res.status(200).json(salaries);
   }
@@ -33,7 +27,6 @@ router.get(
  */
 router.get(
   '/sumsalary',
-  checkPermission(),
   celebrate({
     query: sumSalarySchema,
   }),
@@ -65,7 +58,6 @@ router.get(
  */
 router.get(
   '/sumall',
-  checkPermission(),
   celebrate({
     query: Joi.object({
       fromMonth: Joi.number().min(1).max(12).required(),
@@ -92,7 +84,6 @@ router.get(
  */
 router.get(
   '/filter',
-  checkPermission(),
   validation.celebrate({
     query: filterSalarySchema,
   }),
@@ -112,7 +103,6 @@ router.get(
  */
 router.get(
   '/:userId',
-  checkPermission(),
   validation.celebrate({
     params: {
       userId: validation.schemas.uuid.required(),
@@ -133,8 +123,7 @@ router.get(
  */
 router.get(
   '/',
-  checkPermission(),
-  celebrate({
+  validation.celebrate({
     query: Joi.object({
       userId: Joi.string().guid().optional(),
     }),
@@ -158,7 +147,6 @@ router.get(
  */
 router.get(
   '/:userId/:year/:month',
-  checkPermission(),
   validation.celebrate({
     params: {
       userId: validation.schemas.uuid.required(),
@@ -170,9 +158,12 @@ router.get(
     const { userId, year, month } = req.params;
     const salary = await Container.get(SalaryService).getSalaryByMonth(userId, parseInt(year), parseInt(month));
     if (!salary) {
-      return res.status(404).json({ error: 'Salary not found' });
+       res.status(404).json({ error: 'Salary not found' });
+       return;
     }
-    return res.status(200).json(salary);
+     res.status(200).json(salary);
+     
+     return;
   }
 );
 
@@ -181,7 +172,6 @@ router.get(
  */
 router.post(
   '/:userId',
-  checkPermission(),
   validation.celebrate({
     params: {
       userId: validation.schemas.uuid.required(),
@@ -213,7 +203,6 @@ router.post(
  */
 router.put(
   '/:userId/:year/:month',
-  checkPermission(),
   validation.celebrate({
     params: {
       userId: validation.schemas.uuid.required(),
@@ -244,7 +233,6 @@ router.put(
  */
 router.delete(
   '/:userId/:year/:month',
-  checkPermission(),
   validation.celebrate({
     params: {
       userId: validation.schemas.uuid.required(),

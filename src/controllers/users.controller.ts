@@ -13,7 +13,7 @@ import {
 } from '../types';
 import { userFilterSchema } from '../middlewares/validation.middleware';
 import { NotFound } from 'http-errors';
-import { checkPermission } from '../middlewares/permission.middleware';
+
 import { Response } from 'express';
 
 const router = Router();
@@ -25,7 +25,6 @@ const router = Router();
  */
 router.get<{}, UsersResponseDTO, {}, FilterUserDTO>(
   '/filter',
-  checkPermission(),
   validation.celebrate({
     query: userFilterSchema,
   }),
@@ -49,7 +48,6 @@ router.get<{}, UsersResponseDTO, {}, FilterUserDTO>(
  */
 router.get<{}, UsersResponseDTO>(
   '/',
-  checkPermission(),
   async (req, res) => {
     const users = await Container.get(UserService).getUsers({});
     
@@ -70,10 +68,9 @@ router.get<{}, UsersResponseDTO>(
  */
 router.get(
   '/me',
-  checkPermission(),
   async (req, res) => {
     const user = req.auth;
-    if (!user) return res.status(401).json({ message: 'Chưa đăng nhập!' });
+    if (!user) return res.status(401).json({ message: 'Unauthorized' });
     return res.status(200).json(user);
   },
 );
@@ -86,7 +83,6 @@ router.get(
  */
 router.get<{ userId: string }, User>(
   '/:userId',
-  checkPermission(),
   validation.celebrate({
     params: {
       userId: validation.schemas.uuid.required(),
@@ -106,7 +102,6 @@ router.get<{ userId: string }, User>(
  */
 router.post<{}, UserResponseDTO, CreateUserDTO>(
   '/',
-  checkPermission(),
   validation.celebrate({
     body: validation.Joi.object({
       firstName: validation.schemas.firstName.required(),
@@ -139,7 +134,6 @@ router.post<{}, UserResponseDTO, CreateUserDTO>(
  */
 router.put<{ userId: string }, UpdateUserResponseDTO, Partial<CreateUserDTO>>(
   '/:userId',
-  checkPermission(),
   validation.celebrate({
     params: {
       userId: validation.schemas.uuid.required(),
@@ -159,7 +153,7 @@ router.put<{ userId: string }, UpdateUserResponseDTO, Partial<CreateUserDTO>>(
     const updateData = req.body;
     const userService = Container.get(UserService);
     
-    // Service sẽ throw NotFound nếu user không tồn tại
+    // The service will throw a NotFound error if the user does not exist
     const updatedUser = await userService.updateUser(userId, updateData);
     
     res.status(200).json({
@@ -178,7 +172,6 @@ router.put<{ userId: string }, UpdateUserResponseDTO, Partial<CreateUserDTO>>(
  */
 router.delete<{ userId: string }, DeleteUserResponseDTO>(
   '/:userId',
-  checkPermission(),
   validation.celebrate({
     params: {
       userId: validation.schemas.uuid.required(),
@@ -188,9 +181,8 @@ router.delete<{ userId: string }, DeleteUserResponseDTO>(
 
     const { userId } = req.params;
     
-    // Service sẽ throw NotFound nếu user không tồn tại
+    // The service will throw a NotFound error if the user does not exist
     await Container.get(UserService).deleteUser(userId);
-    
     res.status(200).json({
       success: true,
       message: 'User deleted successfully'
