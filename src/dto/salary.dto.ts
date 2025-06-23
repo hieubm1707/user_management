@@ -8,9 +8,7 @@ export const salaryDTO = (salary: SalaryModel): Salary =>  {
       amount: salary.amount,
       month: salary.month,
       year: salary.year,
-      // createdAt: salary.createdAt,
-      // updatedAt: salary.updatedAt,
-      // ... các trường cần thiết khác
+      // insert other required fields here
     };
     return salaryDto;
   };
