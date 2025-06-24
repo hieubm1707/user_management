@@ -1,59 +1,30 @@
 import { Request, Response, NextFunction, RequestHandler } from 'express';
-import { mapPermission } from '../config/map.config';
-import { UserModel } from '../models';
+import { UserModel, PermissionModel, PositionPermissionModel, RoutePermissionModel } from '../models';
 import PositionModel from '../models/position.model';
-import { QueryTypes } from 'sequelize';
 import { AuthUser } from '../types';
+import { match } from 'path-to-regexp';
 
-function getRequiredPermission(req: Request): string | undefined {
-  const keys = [
-    `${req.method} ${req.baseUrl}${req.route?.path || ''}`,
-    `${req.method} ${req.baseUrl}`,
-    `${req.method} ${req.path}`,
-    `${req.method} ${req.originalUrl}`
-  ];
-  for (const key of keys) {
-    const permission = (mapPermission as Record<string, string>)[key];
-    if (permission) {
-      return permission;
+async function getRequiredPermission(req: Request): Promise<string | undefined> {
+  // Get all active route permissions from the database
+  const routePermissions = await RoutePermissionModel.findAll({
+    where: { isActive: true }
+  });
+  // Iterate through each route and match static/dynamic routes
+  for (const route of routePermissions) {
+    // route.route example: 'GET /salary/:userId'
+    const [method, ...pathParts] = route.route.split(' ');
+    const routePath = pathParts.join(' ');
+    if (method !== req.method) continue;
+    // Match the actual request path with the static/dynamic route
+    const matcher = match(routePath, { decode: decodeURIComponent, end: true });
+    // req.baseUrl + req.path is the actual path, e.g., /salary/123
+    if (matcher(req.baseUrl + req.path)) {
+      return route.permissionName;
     }
   }
   return undefined;
 }
 
-async function getUserPermissionIds(positionId: number): Promise<number[]> {
-  const permissions = await PositionModel.sequelize!.query(
-    `SELECT permission_id FROM position_permissions WHERE position_id = :positionId`,
-    { replacements: { positionId }, type: QueryTypes.SELECT }
-  );
-  return Array.isArray(permissions) ? permissions.map(p => (p as any).permission_id) : [];
-}
-
-async function getPermissionIdByName(name: string): Promise<number | undefined> {
-  const permissionRows = await PositionModel.sequelize!.query(
-    `SELECT id FROM permission WHERE name = :name`,
-    { replacements: { name }, type: QueryTypes.SELECT }
-  );
-  const permissionRow = Array.isArray(permissionRows) ? permissionRows[0] : undefined;
-  return permissionRow ? (permissionRow as any).id : undefined;
-}
-
-async function checkLevel(user: AuthUser, targetUserId: string): Promise<string | null> {
-  const targetUser = await UserModel.findByPk(targetUserId, {
-    include: [{ model: PositionModel, as: 'position' }],
-  });
-  if (!targetUser || !targetUser.position) {
-    return 'Target user does not exist or has no position!';
-  }
-  const myPosition = await PositionModel.findByPk(user.positionId);
-  if (!myPosition || typeof (myPosition as any).level !== 'number') {
-    return 'Unable to determine your level!';
-  }
-  if ((myPosition as any).level <= (targetUser.position as any).level) {
-    return 'You do not have sufficient level to perform operations on this user!';
-  }
-  return null;
-}
 
 export const checkPermission = (permissionName?: string): RequestHandler => {
   return async (req: Request, res: Response, next: NextFunction) => {
@@ -62,34 +33,57 @@ export const checkPermission = (permissionName?: string): RequestHandler => {
       if (!user) {
         return res.status(401).json({ message: 'Not logged in!' });
       }
+
       if (user.role === 'admin') {
         return next();
       }
-      const requiredPermission = permissionName || getRequiredPermission(req);
+
+      const requiredPermission = permissionName || await getRequiredPermission(req);
+
       if (!requiredPermission) {
-        return res.status(403).json({ message: 'You do not have permission to perform this function!' });
+        return res.status(403).json({ message: 'This function is not configured for permissions.' });
       }
+
       if (!user.positionId) {
         return res.status(403).json({ message: 'User has no position!' });
       }
-      const userPermissionIds = await getUserPermissionIds(user.positionId);
-      const requiredPermissionId = await getPermissionIdByName(requiredPermission);
-      if (!requiredPermissionId) {
-        return res.status(403).json({ message: 'Permission does not exist!' });
+
+      const permissions = await PositionPermissionModel.findAll({
+        where: { positionId: user.positionId },
+        attributes: ['permissionId'],
+      });
+      const userPermissionIds = permissions.map((p: PositionPermissionModel) => p.permissionId);
+
+      const permissionRow = await PermissionModel.findOne({ where: { name: requiredPermission } });
+      if (!permissionRow) {
+        return res.status(403).json({ message: 'Permission does not exist in the system!' });
       }
+      const requiredPermissionId = permissionRow.id;
+
       if (!userPermissionIds.includes(requiredPermissionId)) {
         return res.status(403).json({ message: 'You do not have permission to perform this function!' });
       }
+
       if (
         ['update_user', 'delete_user'].includes(requiredPermission) &&
         req.params.id &&
         req.params.id !== user.id
       ) {
-        const levelError = await checkLevel(user, req.params.id);
-        if (levelError) {
-          return res.status(requiredPermission === 'delete_user' ? 404 : 403).json({ message: levelError });
+        const targetUser = await UserModel.findByPk(req.params.id, {
+          include: [{ model: PositionModel, as: 'position' }],
+        });
+        if (!targetUser || !targetUser.position) {
+          return res.status(404).json({ message: 'Target user does not exist or has no position!' });
+        }
+        const myPosition = await PositionModel.findByPk(user.positionId);
+        if (!myPosition || typeof (myPosition as any).level !== 'number') {
+          return res.status(403).json({ message: 'Unable to determine your level!' });
+        }
+        if ((myPosition as any).level <= (targetUser.position as any).level) {
+          return res.status(403).json({ message: 'You do not have sufficient level to perform operations on this user!' });
         }
       }
+
       return next();
     } catch (err) {
       return next(err);

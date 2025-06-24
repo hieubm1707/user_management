@@ -8,7 +8,9 @@ import { Sequelize } from 'sequelize';
 import UserModel from '../models/user.model';
 import { salaryDTO } from '../dto/salary.dto';
 import { SalarySumResult } from '../types/salary.type';
-import { BadRequest, NotFound } from 'http-errors';
+
+import { NotFound, Conflict, BadRequest } from 'http-errors';
+
 
 @Service()
 export class SalaryService {
@@ -57,7 +59,9 @@ export class SalaryService {
       where: { userid: userId, month: data.month, year: data.year }
     });
     if (existed) {
-      throw new BadRequest('Salary for this user in this month and year already exists!');
+
+      throw new Conflict('Salary for this user in this month and year already exists!');
+
     }
     // If not exists, create new salary
     const salary = await SalaryModel.create({
@@ -96,12 +100,16 @@ export class SalaryService {
     if (!salary) {
       throw new NotFound('Salary not found');
     }
-    // Note: salary here is already DTO, need to get model instance for update
+
+    // Note: 'salary' here is a DTO. We need the model instance to update.
+
     const salaryInstance = await SalaryModel.findOne({
       where: { userid: userId, year, month }
     });
     if (!salaryInstance) {
-      throw new NotFound('Salary not found');
+
+      throw new NotFound('Salary record instance not found for update.');
+
     }
     await salaryInstance.update({ amount: data.amount });
     return salaryDTO(salaryInstance);

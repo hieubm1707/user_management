@@ -22,7 +22,7 @@ const secretCallback = (
   const { sub: userId } = payload;
 
   return UserModel.findByPk(userId, {
-    attributes: ['id', 'email', 'username', 'password', 'role', 'positionId', 'firstName', 'lastName', 'phone','positionId'],
+    attributes: ['id', 'email', 'username', 'password', 'role', 'positionId', 'firstName', 'lastName', 'phone'],
     include: ['position']
   })
     .then(user => {
@@ -34,7 +34,7 @@ const secretCallback = (
         password: string;
       };
 
-      req.userData = authUser as AuthUser;
+      req.auth = authUser as AuthUser;
 
       const secret = getJwtSecret(user.password);
 
@@ -70,9 +70,3 @@ export const jwtErrorHandler = (): ErrorRequestHandler => {
   };
 };
 
-export const assignUserToAuth = (req: Request, res: Response, next: NextFunction) => {
-  if ((req as any).userData) {
-    req.auth = (req as any).userData;
-  }
-  next();
-};

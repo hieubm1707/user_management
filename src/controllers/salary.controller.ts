@@ -6,6 +6,7 @@ import { Joi, celebrate, filterSalarySchema, sumSalarySchema, validateDateRangeQ
 import { AuthUser } from '../types';
 import { Salary, SalarySumResult } from '../types/salary.type';
 
+
 const router = Router();
 
 

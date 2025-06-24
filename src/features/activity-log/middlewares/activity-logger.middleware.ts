@@ -1,7 +1,10 @@
 import { NextFunction, Request, Response } from 'express';
 import { Container } from 'typedi';
 import { ActivityLogService } from '../services';
-import { UUIDTypes } from 'uuid';
+
+
+import { Logger } from 'winston';
+
 
 /**
  * Masks sensitive data in request/response bodies
@@ -61,7 +64,10 @@ export const activityLoggerMiddleware = async (req: Request, res: Response, next
         activityLogService.createActivityLog(logData);
       }
     } catch (error) {
-      console.error('❌ Error logging activity:', error);
+
+      const logger = Container.get<Logger>('logger');
+      logger.error('Error logging activity:', error);
+
     }
     return originalSend.call(this, body);
   };

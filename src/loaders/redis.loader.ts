@@ -4,6 +4,7 @@
 import { createClient, RedisClientType } from 'redis';
 import { Container } from 'typedi';
 import { Config } from '../config';
+import { logger } from '../config';
 
 /**
  * Redis client initializer
@@ -17,6 +18,7 @@ export default async function initRedis(): Promise<RedisClientType> {
   });
 
   redisClient.on('error', err => {
+    logger.error('Redis Client Error', err);
     throw new Error(`failed to initialize redis client. ${err}`);
   });
 

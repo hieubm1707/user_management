@@ -14,7 +14,7 @@ import {
 } from '../types';
 import { userFilterSchema } from '../middlewares/validation.middleware';
 import { NotFound } from 'http-errors';
-import { checkPermission } from '../middlewares/permission.middleware';
+
 import { Response } from 'express';
 import { mapUserAuthToDTO } from '../dto/user.dto';
 
@@ -29,7 +29,6 @@ const router = Router();
  */
 router.get<{}, UsersResponseDTO, {}, FilterUserDTO>(
   '/filter',
-  checkPermission(),
   validation.celebrate({
     query: userFilterSchema,
   }),
@@ -53,7 +52,6 @@ router.get<{}, UsersResponseDTO, {}, FilterUserDTO>(
  */
 router.get<{}, UsersResponseDTO>(
   '/',
-  checkPermission(),
   async (req, res) => {
     const users = await Container.get(UserService).getUsers({});
     res.status(200).json({
@@ -71,12 +69,16 @@ router.get<{}, UsersResponseDTO>(
  *
  * Get owns user details
  */
-router.get<{}, User>(
+/**
+ * GET /me
+ *
+ * Get owns user details
+ */
+router.get(
   '/me',
-  checkPermission(),
   async (req, res) => {
-    const userService = Container.get(UserService);
-    const user = userService.getOwnUserData(req.auth as AuthUser);
+    const user = req.auth;
+    if (!user) return res.status(401).json({ message: 'Unauthorized' });
     return res.status(200).json(user);
   },
 );
@@ -89,7 +91,6 @@ router.get<{}, User>(
  */
 router.get<{ userId: string }, User>(
   '/:userId',
-  checkPermission(),
   validation.celebrate({
     params: {
       userId: validation.schemas.uuid.required(),
@@ -110,7 +111,6 @@ router.get<{ userId: string }, User>(
  */
 router.post<{}, User, CreateUserDTO>(
   '/',
-  checkPermission(),
   validation.celebrate({
     body: validation.Joi.object({
       firstName: validation.schemas.firstName.required(),
@@ -135,9 +135,8 @@ router.post<{}, User, CreateUserDTO>(
  *
  * Update user info
  */
-router.put<{ userId: string }, User, Partial<CreateUserDTO>>(
+router.put<{ userId: string }, UpdateUserResponseDTO, Partial<CreateUserDTO>>(
   '/:userId',
-  checkPermission(),
   validation.celebrate({
     params: {
       userId: validation.schemas.uuid.required(),
@@ -153,12 +152,21 @@ router.put<{ userId: string }, User, Partial<CreateUserDTO>>(
     }).min(1),
   }),
   async (req, res) => {
-    const updatedUser = await Container.get(UserService).updateUser(
-      req.params.userId, 
-      req.body
-    );
-    res.status(200).json(updatedUser);
+    const { userId } = req.params;
+    const updateData = req.body;
+    const userService = Container.get(UserService);
+    
+    // The service will throw a NotFound error if the user does not exist
+    const updatedUser = await userService.updateUser(userId, updateData);
+    
+    res.status(200).json({
+      success: true,
+      data: updatedUser,
+      message: 'User updated successfully'
+    });
   }
+
+  
 );
 
 
@@ -169,15 +177,17 @@ router.put<{ userId: string }, User, Partial<CreateUserDTO>>(
  */
 router.delete<{ userId: string }, string>(
   '/:userId',
-  checkPermission(),
   validation.celebrate({
     params: {
       userId: validation.schemas.uuid.required(),
     },
   }),
   async (req, res) => {
-    await Container.get(UserService).deleteUser(req.params.userId);
+    const { userId } = req.params;
+    // The service will throw a NotFound error if the user does not exist
+    await Container.get(UserService).deleteUser(userId);
     res.status(200).json('User deleted successfully');
+
   },
 );
 
