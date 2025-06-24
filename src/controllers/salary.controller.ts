@@ -2,11 +2,10 @@ import { Router, Response } from 'express';
 import { Container } from 'typedi';
 import { SalaryService } from '../services/salary.service';
 import { validation } from '../middlewares';
-import { Salary, SalarySumResult } from '../types/salary.type';
 import { Joi, celebrate, filterSalarySchema, sumSalarySchema, validateDateRangeQuery } from '../middlewares/validation.middleware';
 import { AuthUser } from '../types';
-import { checkPermission } from '../middlewares/permission.middleware';
-import { BadRequest, NotFound } from 'http-errors';
+import { Salary, SalarySumResult } from '../types/salary.type';
+
 const router = Router();
 
 
@@ -14,11 +13,11 @@ const router = Router();
  * API: GET /my-salaries
  * Description: Get the salary list of the currently logged-in user
  */
-router.get<{}, Salary[]>(
+router.get<{}, Salary[] | { message: string }>(
   '/me',
-  checkPermission(),
   async (req, res) => {
     const user = req.auth as AuthUser;
+    if (!user) return res.status(401).json({ message: 'Unauthorized' });
     const salaries = await Container.get(SalaryService).getUserSalaries(user.id);
     return res.status(200).json(salaries);
   }
@@ -30,7 +29,6 @@ router.get<{}, Salary[]>(
  */
 router.get<{}, SalarySumResult>(
   '/sumsalary',
-  checkPermission(),
   celebrate({
     query: sumSalarySchema,
   }),
@@ -58,7 +56,6 @@ router.get<{}, SalarySumResult>(
  */
 router.get<{}, { total: number}>(
   '/sumall',
-  checkPermission(),
   celebrate({
     query: Joi.object({
       fromMonth: Joi.number().min(1).max(12).required(),
@@ -86,7 +83,6 @@ router.get<{}, { total: number}>(
  */
 router.get<{}, Salary[]>(
   '/filter',
-  checkPermission(),
   validation.celebrate({
     query: filterSalarySchema,
   }),
@@ -104,7 +100,6 @@ router.get<{}, Salary[]>(
  */
 router.get<{userId: string}, Salary[]>(
   '/:userId',
-  checkPermission(),
   validation.celebrate({
     params: {
       userId: validation.schemas.uuid.required(),
@@ -123,8 +118,7 @@ router.get<{userId: string}, Salary[]>(
  */
 router.get<{}, Salary[]>(
   '/',
-  checkPermission(),
-  celebrate({
+  validation.celebrate({
     query: Joi.object({
       userId: Joi.string().guid().optional(),
     }),
@@ -144,9 +138,8 @@ router.get<{}, Salary[]>(
 /**
  * GET /salary/:userId/:year/:month
  */
-router.get<{userId: string, year: string, month: string}, Salary | null>(
+router.get<{userId: string, year: string, month: string}, Salary | { error: string }>(
   '/:userId/:year/:month',
-  checkPermission(),
   validation.celebrate({
     params: {
       userId: validation.schemas.uuid.required(),
@@ -157,7 +150,15 @@ router.get<{userId: string, year: string, month: string}, Salary | null>(
   async (req, res) => {
     const { userId, year, month } = req.params;
     const salary = await Container.get(SalaryService).getSalaryByMonth(userId, parseInt(year), parseInt(month));
-    return res.status(200).json(salary);
+
+
+    if (!salary) {
+       res.status(404).json({ error: 'Salary not found' });
+       return;
+    }
+     res.status(200).json(salary);
+     
+     return;
   }
 );
 
@@ -167,7 +168,6 @@ router.get<{userId: string, year: string, month: string}, Salary | null>(
  */
 router.post<{userId: string}, Salary, {amount: number, month: number, year: number}>(
   '/:userId',
-  checkPermission(),
   validation.celebrate({
     params: {
       userId: validation.schemas.uuid.required(),
@@ -192,7 +192,6 @@ router.post<{userId: string}, Salary, {amount: number, month: number, year: numb
  */
 router.put<{userId: string, year: string, month: string}, Salary, {amount: number}>(
   '/:userId/:year/:month',
-  checkPermission(),
   validation.celebrate({
     params: {
       userId: validation.schemas.uuid.required(),
@@ -218,7 +217,6 @@ router.put<{userId: string, year: string, month: string}, Salary, {amount: numbe
  */
 router.delete<{userId: string, year: string, month: string}, {message: string}>(
   '/:userId/:year/:month',
-  checkPermission(),
   validation.celebrate({
     params: {
       userId: validation.schemas.uuid.required(),
