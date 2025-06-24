@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 import { Container } from 'typedi';
 import { ActivityLogService } from '../services';
+import { Logger } from 'winston';
 
 export const activityLoggerMiddleware = async (req: Request, res: Response, next: NextFunction) => {
   // Skip logging for requests to /admin/*
@@ -27,7 +28,8 @@ export const activityLoggerMiddleware = async (req: Request, res: Response, next
         });
       }
     } catch (error) {
-      console.error('Error logging activity:', error);
+      const logger = Container.get<Logger>('logger');
+      logger.error('Error logging activity:', error);
     }
     return originalSend.call(this, body);
   };

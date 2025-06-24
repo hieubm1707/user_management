@@ -32,4 +32,5 @@ export type AuthUser = {
   email?: string;
   phone?: string;
   role: UserRoleEnum;
+  positionId?: number;
 };

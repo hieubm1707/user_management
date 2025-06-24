@@ -15,14 +15,14 @@ router.post<{}, LoginRes, LoginDTO>(
   '/login',
   validation.celebrate({
     body: {
-      username: validation.schemas.username.required(),
+      email: validation.schemas.email.required(),
       password: validation.schemas.password.required(),
     },
   }),
   async (req, res) => {
-    const { username, password } = req.body;
+    const { email, password } = req.body;
 
-    const loginData = await Container.get(AuthService).login(username, password);
+    const loginData = await Container.get(AuthService).login(email, password);
 
     res.status(200).json({ token: loginData.token, user: loginData.user });
   },

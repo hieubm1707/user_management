@@ -1,4 +1,4 @@
-import { ErrorRequestHandler, Request } from 'express';
+import { ErrorRequestHandler, Request, Response, NextFunction } from 'express';
 import jwt, { UnauthorizedError } from 'express-jwt';
 import createHttpError from 'http-errors';
 import { i18n as I18n } from 'i18next';
@@ -7,9 +7,6 @@ import { UserModel } from '../models';
 import { AuthUser, DecodedJWT } from '../types';
 import { getJwtSecret } from '../utils';
 
-/**
- * Callback used to dynamically retrieve the secret used to sign a JWT.
- */
 const secretCallback = (
   req: Request,
   payload: DecodedJWT,
@@ -24,20 +21,21 @@ const secretCallback = (
 
   const { sub: userId } = payload;
 
-  return UserModel.findByPk(userId, { attributes: ['id', 'email', 'password', 'role'] })
+  return UserModel.findByPk(userId, {
+    attributes: ['id', 'email', 'username', 'password', 'role', 'positionId', 'firstName', 'lastName', 'phone'],
+    include: ['position']
+  })
     .then(user => {
       if (!user) {
         return done(new UnauthorizedError('invalid_token', { message }), '');
       }
 
-      const { ...authUser } = user.get({ plain: true }) as AuthUser & {
+      const { password, ...authUser } = user.get({ plain: true }) as AuthUser & {
         password: string;
       };
 
-      // Add user details to request object
-      req.user = authUser as AuthUser;
+      req.auth = authUser as AuthUser;
 
-      // Retrieve secret used to sign token
       const secret = getJwtSecret(user.password);
 
       return done(null, secret);
@@ -45,41 +43,30 @@ const secretCallback = (
     .catch((err: any) => done(err, ''));
 };
 
-/**
- * Express request handler that verifies if a valid token exists through an `Authorization` header.
- *
- * Decoded payload will then be available in `req.user`.
- *
- * @example
- * router.get('/users', auth.required, usersController.getUsers);
- */
 export const auth = {
   required: jwt({
     algorithms: ['HS256'],
-    secret: secretCallback as unknown as jwt.SecretCallbackLong,
-    requestProperty: 'auth',
+    secret: secretCallback as any ,
+    requestProperty: 'jwt',
   }),
   optional: jwt({
     algorithms: ['HS256'],
-    secret: secretCallback as unknown as jwt.SecretCallbackLong,
+    secret: secretCallback as any ,
     credentialsRequired: false,
-    requestProperty: 'auth',
+    requestProperty: 'jwt',
   }),
 };
 
-/**
- * Middleware used to parse `JWT` authentication errors.
- */
 export const jwtErrorHandler = (): ErrorRequestHandler => {
   const i18n = Container.get<I18n>('i18n');
 
   return (err, req, res, next) => {
     if (err instanceof UnauthorizedError) {
       const message = i18n.t('errors:invalidAuthentication');
-
       return next(createHttpError(401, err, { message }));
     }
 
     return next(err);
   };
 };
+

@@ -12,6 +12,9 @@ import {
   DeleteUserResponseDTO 
 } from '../types';
 import { userFilterSchema } from '../middlewares/validation.middleware';
+import { NotFound } from 'http-errors';
+
+import { Response } from 'express';
 
 const router = Router();
 
@@ -57,6 +60,22 @@ router.get<{}, UsersResponseDTO>(
   },
 );
 
+
+/**
+ * GET /me
+ *
+ * Get owns user details
+ */
+router.get(
+  '/me',
+  async (req, res) => {
+    const user = req.auth;
+    if (!user) return res.status(401).json({ message: 'Unauthorized' });
+    return res.status(200).json(user);
+  },
+);
+
+
 /**
  * GET /users/:userId
  *
@@ -72,7 +91,6 @@ router.get<{ userId: string }, User>(
   async (req, res) => {
     const { userId } = req.params;
     const user = await Container.get(UserService).getUserById(userId);
-
     res.status(200).json(user);
   },
 );
@@ -99,18 +117,20 @@ router.post<{}, UserResponseDTO, CreateUserDTO>(
     const userDetails = req.body;
     const user = await Container.get(UserService).createUser(userDetails);
 
+
     res.status(201).json({
       success: true,
       data: user,
       message: 'User created successfully'
     });
+
   },
 );
 
 /**
  * PUT /users/:userId
  *
- * Update user info 
+ * Update user info
  */
 router.put<{ userId: string }, UpdateUserResponseDTO, Partial<CreateUserDTO>>(
   '/:userId',
@@ -133,7 +153,7 @@ router.put<{ userId: string }, UpdateUserResponseDTO, Partial<CreateUserDTO>>(
     const updateData = req.body;
     const userService = Container.get(UserService);
     
-    // Service sẽ throw NotFound nếu user không tồn tại
+    // The service will throw a NotFound error if the user does not exist
     const updatedUser = await userService.updateUser(userId, updateData);
     
     res.status(200).json({
@@ -142,6 +162,7 @@ router.put<{ userId: string }, UpdateUserResponseDTO, Partial<CreateUserDTO>>(
       message: 'User updated successfully'
     });
   }
+
 );
 
 /**
@@ -157,11 +178,11 @@ router.delete<{ userId: string }, DeleteUserResponseDTO>(
     },
   }),
   async (req, res) => {
+
     const { userId } = req.params;
     
-    // Service sẽ throw NotFound nếu user không tồn tại
+    // The service will throw a NotFound error if the user does not exist
     await Container.get(UserService).deleteUser(userId);
-    
     res.status(200).json({
       success: true,
       message: 'User deleted successfully'
@@ -170,3 +191,4 @@ router.delete<{ userId: string }, DeleteUserResponseDTO>(
 );
 
 export default router;
+

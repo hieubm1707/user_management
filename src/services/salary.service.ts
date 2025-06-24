@@ -8,6 +8,8 @@ import { Sequelize } from 'sequelize';
 import UserModel from '../models/user.model';
 import { salaryDTO } from '../dto/salary.dto';
 import { SalarySumResult } from '../types/salary.type';
+import { NotFound, Conflict, BadRequest } from 'http-errors';
+
 @Service()
 export class SalaryService {
   async getSalaryByUser(userId: string): Promise<Salary[]> {
@@ -18,6 +20,7 @@ export class SalaryService {
     return salaries.map(salaryDTO);
   }
 
+  
   async getSalaryByMonth(userId: string, year: number, month: number): Promise<Salary | null> {
     const salary = await SalaryModel.findOne({
       where: { 
@@ -36,7 +39,7 @@ export class SalaryService {
       where: { userid: userId, month: data.month, year: data.year }
     });
     if (existed) {
-      throw new Error('Salary for this user in this month and year already exists!');
+      throw new Conflict('Salary for this user in this month and year already exists!');
     }
     // If not exists, create new salary
     const salary = await SalaryModel.create({
@@ -53,7 +56,7 @@ export class SalaryService {
     const salaryInstance = await SalaryModel.findOne({
       where: { userid: userId, year, month }
     });
-    if (!salaryInstance) throw new Error('Salary not found');
+    if (!salaryInstance) throw new NotFound('Salary not found');
     await salaryInstance.destroy();
     return true;
   }
@@ -61,14 +64,14 @@ export class SalaryService {
   async updateSalary(userId: string, year: number, month: number, data: { amount: number }): Promise<Salary> {
     const salary = await this.getSalaryByMonth(userId, year, month);
     if (!salary) {
-      throw new Error('Salary not found');
+      throw new NotFound('Salary not found');
     }
-    // Lưu ý: salary ở đây đã là DTO, cần lấy lại instance model để update
+    // Note: 'salary' here is a DTO. We need the model instance to update.
     const salaryInstance = await SalaryModel.findOne({
       where: { userid: userId, year, month }
     });
     if (!salaryInstance) {
-      throw new Error('Salary not found');
+      throw new NotFound('Salary record instance not found for update.');
     }
     await salaryInstance.update({ amount: data.amount });
     return salaryDTO(salaryInstance);
@@ -76,7 +79,7 @@ export class SalaryService {
 
 
 
-  async getAllSalaries() {
+  async getAllSalaries(): Promise<Salary[]> {
     const salaries = await SalaryModel.findAll({
       order: [['year', 'DESC'], ['month', 'DESC']]
     });
@@ -84,7 +87,7 @@ export class SalaryService {
   }
 
   // Filter salary
-  async getSalaries(filter: FilterSalaryDTO) {
+  async getSalaries(filter: FilterSalaryDTO): Promise<Salary[]> {
     const where: any = {};
 
     if (filter.userId && filter.userId.trim() !== "") {
@@ -97,7 +100,7 @@ export class SalaryService {
       where.amount = { ...where.amount, [Op.lte]: filter.maxAmount };
     }
     if (filter.month !== undefined && filter.month !== null) {
-      if (!filter.year) throw new Error('If month is provided, year must also be provided!');
+      if (!filter.year) throw new BadRequest('If month is provided, year must also be provided!');
       where.month = filter.month;
       where.year = filter.year;
     } else if (filter.year !== undefined && filter.year !== null) {
@@ -105,8 +108,8 @@ export class SalaryService {
       where.year = filter.year;
     }
     // Handle filter by range
-    if (filter.fromMonth && !filter.fromYear) throw new Error('Must provide fromYear if fromMonth is provided!');
-    if (filter.toMonth && !filter.toYear) throw new Error('Must provide toYear if toMonth is provided!');
+    if (filter.fromMonth && !filter.fromYear) throw new BadRequest('Must provide fromYear if fromMonth is provided!');
+    if (filter.toMonth && !filter.toYear) throw new BadRequest('Must provide toYear if toMonth is provided!');
 
     // If both from and to are provided
     if (
@@ -182,7 +185,7 @@ export class SalaryService {
     // Check if user exists
     const user = await UserModel.findByPk(userId);
     if (!user) {
-      throw new Error('User not found');
+      throw new NotFound('User not found');
     }
     // Where condition for date range
     const where: any = {
@@ -245,6 +248,24 @@ export class SalaryService {
     });
     const total = salaries.reduce((sum, salary) => sum + salary.amount, 0);
     return total;
+  }
+
+  // Get all salaries of a user
+  async getUserSalaries(userId: string): Promise<Salary[]> {
+    try {
+      const salaries = await SalaryModel.findAll({
+        where: {
+          userid: userId
+        },
+        order: [
+          ['year', 'DESC'],
+          ['month', 'DESC']
+        ]
+      });
+      return salaries.map(salaryDTO);
+    } catch (error) {
+      throw error;
+    }
   }
 }
 
