@@ -4,16 +4,19 @@ import { CreationAttributes } from 'sequelize';
 import { Inject, Service } from 'typedi';
 import { userDTO } from '../dto';
 import { UserModel } from '../models';
-import { CreateUserDTO, FilterUserDTO, User } from '../types';
+import { CreateUserDTO, FilterUserDTO, User, AuthUser } from '../types';
 import SalaryModel from '../models/salary.model';
 import { Op, Sequelize } from 'sequelize';
 import PositionModel from '../models/position.model';
 import { validate as isUuid } from 'uuid';
+import { mapUserAuthToDTO } from '../dto/user.dto';
+
 
 @Service()
 export default class UserService {
   @Inject('i18n')
   i18n!: I18n;
+
 
   /**
    * Returns the details of a user or throws a `NotFound` error if not found.
@@ -26,9 +29,9 @@ export default class UserService {
     if (!user) {
       throw new NotFound(this.i18n.t('errors:userNotFound'));
     }
-
     return userDTO(user);
   }
+
 
   /**
    * Get users by filter
@@ -44,7 +47,6 @@ export default class UserService {
         { username: { [Op.iLike]: `%${filter.search}%` } },
         { email: { [Op.iLike]: `%${filter.search}%` } },
         { phone: { [Op.iLike]: `%${filter.search}%` } },
-        
       ];
     }
     if (filter.phone && filter.phone.trim() !== "") {
@@ -69,7 +71,6 @@ export default class UserService {
         where.positionId = Number(filter.positionId); // Filter users by specific position
       }
     }
-
     const users = await UserModel.findAll({
       where,
       include: [
@@ -79,6 +80,7 @@ export default class UserService {
     });
     return users.map(userDTO);
   }
+
 
   /**
    * Create new user
@@ -96,6 +98,7 @@ export default class UserService {
     return userDTO(userWithPosition!);
   }
 
+
   /**
    * Update user by id
    */
@@ -110,6 +113,18 @@ export default class UserService {
     });
     return userDTO(userWithPosition!);
   }
+
+
+  /**
+   * Get current user's own data from AuthUser
+   */
+  getOwnUserData(authUser: AuthUser): User {
+    if (!authUser) {
+      throw new BadRequest(this.i18n.t('errors:notLoggedIn'));
+    }
+    return mapUserAuthToDTO(authUser);
+  }
+
 
   /**
    * Delete user by id

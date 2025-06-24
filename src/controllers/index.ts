@@ -42,4 +42,5 @@ router.use('/positions', auth.required as unknown as RequestHandler, checkPermis
 
 
 
+
 export default router;

@@ -1,4 +1,3 @@
-
 import authRoutes from './features/auth/routes';
 import 'reflect-metadata';
 import AdminJSExpress from '@adminjs/express';
@@ -29,7 +28,7 @@ import {
   sequelizeErrorHandler,
 } from './middlewares';
 import { SessionModel } from './models';
-// app.use(activityLoggerMiddleware); // Auto logging middleware disabled
+import { activityLoggerMiddleware } from './features/activity-log/middlewares';
 
 /**
  * Method used to setup middlewares and routing for the `app` instance.
@@ -46,7 +45,7 @@ export default function initializeApp(app: Application) {
   app.use(favicon(join(config.publicPath, 'favicon.ico')) as unknown as RequestHandler);
 
   app.use(logRequestResponse);
-  // app.use(activityLoggerMiddleware); // Auto logging middleware disabled
+  app.use(activityLoggerMiddleware);
 
   app.use(
     helmet({

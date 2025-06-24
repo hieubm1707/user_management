@@ -42,6 +42,29 @@ export function celebrateErrorHandler(): ErrorRequestHandler {
 }
 
 /**
+ * Returns `true` if the error is a custom business error.
+ */
+function isCustomBusinessError(err: any): boolean {
+  return err.name === 'UserNotFoundError' || 
+         err.name === 'SalaryAlreadyExistsError' || 
+         err.name === 'SalaryNotFoundError' || 
+         err.name === 'ValidationError';
+}
+
+/**
+ * Middleware used to parse custom business errors.
+ */
+export function customBusinessErrorHandler(): ErrorRequestHandler {
+  return (err, req, res, next) => {
+    if (isCustomBusinessError(err)) {
+      const { message } = err;
+      return next(createHttpError(400, err, { message }));
+    }
+    return next(err);
+  };
+}
+
+/**
  * Returns `true` if the error originated from the `sequelize` package.
  */
 function isSequelizeError(err: any): err is BaseError {

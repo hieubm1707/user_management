@@ -11,6 +11,7 @@ export default (sequelize: Sequelize): ResourceWithOptions => {
       actions: {
         delete: {
           isAccessible: true,
+
           after: async (response: any, request: any, context: any) => {
             const { record } = response;
             await Container.get(ActivityLogService).createActivityLog({
@@ -33,6 +34,7 @@ export default (sequelize: Sequelize): ResourceWithOptions => {
           isAccessible: true,
           after: async (response: any, request: any, context: any) => {
             const { record } = response;
+
             const { salary } = request.payload;
 
             const activityLogService = Container.get(ActivityLogService);
@@ -50,6 +52,7 @@ export default (sequelize: Sequelize): ResourceWithOptions => {
                 },
               };
               await activityLogService.createActivityLog(logData);
+
             }
             return response;
           },
@@ -61,6 +64,7 @@ export default (sequelize: Sequelize): ResourceWithOptions => {
           isAccessible: true,
           after: async (response: any, request: any, context: any) => {
             const { record } = response;
+
             const { salary } = request.payload;
 
             const activityLogService = Container.get(ActivityLogService);
@@ -78,6 +82,7 @@ export default (sequelize: Sequelize): ResourceWithOptions => {
                 },
               };
               await activityLogService.createActivityLog(logData);
+
             }
             return response;
           },

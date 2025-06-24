@@ -9,14 +9,18 @@ import {
   UserResponseDTO, 
   UsersResponseDTO, 
   UpdateUserResponseDTO,
-  DeleteUserResponseDTO 
+  DeleteUserResponseDTO,
+  AuthUser
 } from '../types';
 import { userFilterSchema } from '../middlewares/validation.middleware';
 import { NotFound } from 'http-errors';
 
 import { Response } from 'express';
+import { mapUserAuthToDTO } from '../dto/user.dto';
+
 
 const router = Router();
+
 
 /**
  * GET /users/filter
@@ -31,7 +35,6 @@ router.get<{}, UsersResponseDTO, {}, FilterUserDTO>(
   async (req, res) => {
     const filter = req.query;
     const users = await Container.get(UserService).getUsers(filter);
-    
     res.status(200).json({
       success: true,
       data: users,
@@ -40,6 +43,7 @@ router.get<{}, UsersResponseDTO, {}, FilterUserDTO>(
     });
   },
 );
+
 
 /**
  * GET /
@@ -50,7 +54,6 @@ router.get<{}, UsersResponseDTO>(
   '/',
   async (req, res) => {
     const users = await Container.get(UserService).getUsers({});
-    
     res.status(200).json({
       success: true,
       data: users,
@@ -61,6 +64,11 @@ router.get<{}, UsersResponseDTO>(
 );
 
 
+/**
+ * GET /me
+ *
+ * Get owns user details
+ */
 /**
  * GET /me
  *
@@ -95,12 +103,13 @@ router.get<{ userId: string }, User>(
   },
 );
 
+
 /**
  * POST /users
  *
  * Create new user
  */
-router.post<{}, UserResponseDTO, CreateUserDTO>(
+router.post<{}, User, CreateUserDTO>(
   '/',
   validation.celebrate({
     body: validation.Joi.object({
@@ -116,16 +125,10 @@ router.post<{}, UserResponseDTO, CreateUserDTO>(
   async (req, res) => {
     const userDetails = req.body;
     const user = await Container.get(UserService).createUser(userDetails);
-
-
-    res.status(201).json({
-      success: true,
-      data: user,
-      message: 'User created successfully'
-    });
-
+    return res.status(200).json(user);
   },
 );
+  
 
 /**
  * PUT /users/:userId
@@ -163,14 +166,16 @@ router.put<{ userId: string }, UpdateUserResponseDTO, Partial<CreateUserDTO>>(
     });
   }
 
+  
 );
+
 
 /**
  * DELETE /users/:userId
  *
  * Delete user
  */
-router.delete<{ userId: string }, DeleteUserResponseDTO>(
+router.delete<{ userId: string }, string>(
   '/:userId',
   validation.celebrate({
     params: {
@@ -178,17 +183,14 @@ router.delete<{ userId: string }, DeleteUserResponseDTO>(
     },
   }),
   async (req, res) => {
-
     const { userId } = req.params;
-    
     // The service will throw a NotFound error if the user does not exist
     await Container.get(UserService).deleteUser(userId);
-    res.status(200).json({
-      success: true,
-      message: 'User deleted successfully'
-    });
+    res.status(200).json('User deleted successfully');
+
   },
 );
+
 
 export default router;
 
