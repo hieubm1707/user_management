@@ -33,8 +33,6 @@ export default class ActivityLogService {
    * Creates a new activityLog or throws a `BadRequest` error if a activityLog already exists.
    */
   async createActivityLog(activityLogDetails: CreateActivityLogDTO): Promise<ActivityLog> {
-    // check exist model
-    console.log('Data sent to ActivityLogService:', activityLogDetails);
     const activityLog = await ActivityLogModel.create(
       activityLogDetails as CreationAttributes<ActivityLogModel>,
     );

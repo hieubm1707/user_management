@@ -17,7 +17,6 @@ export default async function initRedis(): Promise<RedisClientType> {
   });
 
   redisClient.on('error', err => {
-    console.log('Redis Client Error', err);
     throw new Error(`failed to initialize redis client. ${err}`);
   });
 
