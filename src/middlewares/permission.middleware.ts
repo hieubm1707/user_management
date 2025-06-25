@@ -1,16 +1,16 @@
 import { Request, Response, NextFunction, RequestHandler } from 'express';
-import { UserModel, PermissionModel, PositionPermissionModel, RoutePermissionModel } from '../models';
+import { UserModel, PermissionModel, PositionPermissionModel, RouterPermissionModel } from '../models';
 import PositionModel from '../models/position.model';
 import { AuthUser } from '../types';
 import { match } from 'path-to-regexp';
 
 async function getRequiredPermission(req: Request): Promise<string | undefined> {
   // Get all active route permissions from the database
-  const routePermissions = await RoutePermissionModel.findAll({
+  const routerPermissions = await RouterPermissionModel.findAll({
     where: { isActive: true }
   });
   // Iterate through each route and match static/dynamic routes
-  for (const route of routePermissions) {
+  for (const route of routerPermissions) {
     // route.route example: 'GET /salary/:userId'
     const [method, ...pathParts] = route.route.split(' ');
     const routePath = pathParts.join(' ');
