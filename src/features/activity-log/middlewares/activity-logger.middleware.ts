@@ -51,6 +51,7 @@ export const activityLoggerMiddleware = async (req: Request, res: Response, next
         const logData = {
           description: `${req.method} ${fullPath}`,
           subjectType: subjectType,
+          subjectId: req.params.userId || req.body.id || req.body.userId || null,
           event: req.method.toLowerCase(),
           logType: 'auto',
           causerId: (req as any).auth?.id || null,
