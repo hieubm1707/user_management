@@ -1,11 +1,13 @@
 import { Table, Column, Model, DataType, CreatedAt, UpdatedAt } from 'sequelize-typescript';
 
 @Table({
-  tableName: 'route_permissions',
+  tableName: 'router_permissions',
+  charset: 'utf8',
+  collate: 'utf8_general_ci',
   timestamps: true,
   underscored: true,
 })
-export class RoutePermissionModel extends Model {
+export class RouterPermissionModel extends Model {
   @Column({
     type: DataType.INTEGER,
     primaryKey: true,
@@ -49,4 +51,4 @@ export class RoutePermissionModel extends Model {
   updatedAt!: Date;
 }
 
-export default RoutePermissionModel; 
+export default RouterPermissionModel; 

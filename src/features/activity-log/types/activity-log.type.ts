@@ -19,10 +19,10 @@ export type CreateActivityLogDTO = {
   logName?: string;
   description: string;
   subjectType?: string;
-  subjectId?: number;
+  subjectId?: string;
   event?: string;
   causerType?: string;
-  causerId?: number;
+  causerId?: string;
   properties?: object;
   batchUuid?: string;
   logType?: string;
@@ -33,10 +33,10 @@ export type UpdateActivityLogDTO = {
   logName?: string;
   description: string;
   subjectType?: string;
-  subjectId?: number;
+  subjectId?: string;
   event?: string;
   causerType?: string;
-  causerId?: number;
+  causerId?: string;
   properties?: object;
   batchUuid?: string;
   logType?: string;
@@ -51,11 +51,13 @@ export type FilterActivityLogDTO = {
   subjectId?: string;
   event?: string;
   causerType?: string;
-  causerId?: number;
+  causerId?: string;
   properties?: object;
   batchUuid?: string;
   createdAt?: Date;
   updatedAt?: Date;
   logType?: string;
+  page?: number;
+  limit?: number;
   // insert filter attributes here
 };

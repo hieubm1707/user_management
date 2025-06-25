@@ -1,7 +1,7 @@
 import { RequestHandler } from 'express';
 import Router from 'express-promise-router';
 import { Container } from 'typedi';
-import { transformKeysMiddleware, validation } from '../middlewares';
+import { validation } from '../middlewares';
 import { ActivityLogService } from '../services';
 import {
   ActivityLog,
@@ -19,7 +19,6 @@ const router = Router();
  */
 router.get<{}, ActivityLog[], {}, FilterActivityLogDTO>(
   '/',
-  transformKeysMiddleware as RequestHandler<{}, ActivityLog[], {}, FilterActivityLogDTO>,
   async (req, res) => {
     const filter = req.query;
 
@@ -60,7 +59,6 @@ router.post<{}, ActivityLog, CreateActivityLogDTO>(
   validation.celebrate({
     body: validation.createActivityLogSchema,
   }),
-  transformKeysMiddleware,
   async (req, res) => {
     const activityLogDetails = req.body;
 
@@ -85,7 +83,6 @@ router.put<{ activityLogId: string }, ActivityLog, UpdateActivityLogDTO>(
     },
     body: validation.updateActivityLogSchema,
   }),
-  transformKeysMiddleware,
   async (req, res) => {
     const { activityLogId } = req.params;
     const activityLogDetails = req.body;

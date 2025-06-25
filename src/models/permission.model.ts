@@ -1,4 +1,4 @@
-import { AllowNull, Column, DataType, Model, PrimaryKey, Table, CreatedAt, UpdatedAt, Unique } from 'sequelize-typescript';
+import { AutoIncrement, AllowNull, Column, DataType, Model, PrimaryKey, Table, CreatedAt, UpdatedAt, Unique } from 'sequelize-typescript';
 
 
 @Table({
@@ -9,6 +9,7 @@ import { AllowNull, Column, DataType, Model, PrimaryKey, Table, CreatedAt, Updat
 })
 export default class Permission extends Model<Permission> {
   @PrimaryKey
+  @AutoIncrement
   @AllowNull(false)
   @Column(DataType.INTEGER)
   id!: number;

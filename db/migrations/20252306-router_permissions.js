@@ -3,7 +3,7 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('route_permissions', {
+    await queryInterface.createTable('router_permissions', {
       id: {
         allowNull: false,
         autoIncrement: true,

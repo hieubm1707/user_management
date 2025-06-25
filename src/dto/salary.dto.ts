@@ -8,7 +8,9 @@ export const salaryDTO = (salary: SalaryModel): Salary =>  {
       amount: salary.amount,
       month: salary.month,
       year: salary.year,
+
       // insert other required fields here
+
     };
     return salaryDto;
   };

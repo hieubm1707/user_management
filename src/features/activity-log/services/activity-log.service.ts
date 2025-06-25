@@ -44,7 +44,10 @@ export default class ActivityLogService {
    */
 
   async getActivityLog(filter: FilterActivityLogDTO): Promise<ActivityLog[]> {
-    const activityLog = await ActivityLogModel.findAll({ where: filter });
+    const activityLog = await ActivityLogModel.findAll({ 
+      where: filter,
+      order: [['createdAt', 'DESC']] 
+    });
 
     return activityLog.map(activityLogDTO);
   }

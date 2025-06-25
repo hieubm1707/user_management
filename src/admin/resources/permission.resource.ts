@@ -4,7 +4,7 @@ import { menu } from '..';
 
 export default (sequelize: Sequelize): ResourceWithOptions => {
   const resource: ResourceWithOptions = {
-    resource: sequelize.models.SalaryModel,
+    resource: sequelize.models.Permission,
     options: {
       actions: {
         list: { isAccessible: true },
@@ -14,31 +14,24 @@ export default (sequelize: Sequelize): ResourceWithOptions => {
         delete: { isAccessible: true },
         bulkDelete: { isAccessible: true },
         search: { isAccessible: true },
-        
       },
-      navigation: menu.users, 
-      listProperties: ['id', 'userid', 'amount', 'month', 'year', 'createdAt', 'updatedAt'],
-      showProperties: ['id', 'userid', 'amount', 'month', 'year', 'createdAt', 'updatedAt'],
-      editProperties: ['userid', 'amount', 'month', 'year'],
-      filterProperties: ['id', 'userid', 'amount', 'month', 'year', 'createdAt', 'updatedAt'],
+      navigation: menu.users, // or create a separate menu if desired
+      listProperties: ['id', 'name', 'description', 'createdAt', 'updatedAt'],
+      showProperties: ['id', 'name', 'description', 'createdAt', 'updatedAt'],
+      editProperties: ['name', 'description'],
+      filterProperties: ['id', 'name', 'description', 'createdAt', 'updatedAt'],
       properties: {
         id: {
           isVisible: { list: true, filter: true, show: true, edit: false },
-        },
-        userid: {
-          reference: 'users',
-          isRequired: true,
-          isVisible: { list: true, filter: true, show: true, edit: true },
-        },
-        amount: {
           type: 'number',
-          isRequired: true,
         },
-        month: {
+        name: {
           isVisible: { list: true, filter: true, show: true, edit: true },
+          type: 'string',
         },
-        year: {
+        description: {
           isVisible: { list: true, filter: true, show: true, edit: true },
+          type: 'string',
         },
         createdAt: {
           isVisible: { list: true, filter: true, show: true, edit: false },
@@ -46,6 +39,10 @@ export default (sequelize: Sequelize): ResourceWithOptions => {
         updatedAt: {
           isVisible: { list: true, filter: true, show: true, edit: false },
         },
+      },
+      sort: {
+        direction: 'asc',
+        sortBy: 'name',
       },
     },
   };

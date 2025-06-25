@@ -9,7 +9,13 @@ const translations: Record<string, LocaleTranslations> = {
     },
     messages: {},
     properties: {},
-    resources: {},
+    resources: {
+      salaries: {
+        properties: {
+          userid: 'Email', // custom column name for salary table
+        },
+      },
+    },
   },
 };
 
